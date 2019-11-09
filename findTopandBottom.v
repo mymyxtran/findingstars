@@ -168,6 +168,7 @@ begin: state_table
 		LoadIn: next_state <= INCREMENT_X;
 		INCREMENT_X: next_state <= rightEdgeReached ? INCREMENT_Y : INCREMENT_X; // begin search for most bottom
 		INCREMENT_Y: next_state <= bottomEdgeReached ? DONESEARCH : INCREMENT_Y;
+		DONESEARCH: next_state <= DONESEARCH;
 		default: next_state <= STARFOUND;
 	
 	endcase
