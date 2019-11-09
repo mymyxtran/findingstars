@@ -160,16 +160,18 @@ localparam	STARFOUND = 4'd0,
 			INCREMENT_Y = 4'd3,
 			DONESEARCH = 4'd4;
 
-always@(posedge clk)
+always@(*)
 begin: state_table
 			
 	case(current_state)
-		STARFOUND: next_state <= LoadIn;
-		LoadIn: next_state <= INCREMENT_X;
-		INCREMENT_X: next_state <= rightEdgeReached ? INCREMENT_Y : INCREMENT_X; // begin search for most bottom
-		INCREMENT_Y: next_state <= bottomEdgeReached ? DONESEARCH : INCREMENT_Y;
-		DONESEARCH: next_state <= DONESEARCH;
-		default: next_state <= STARFOUND;
+		STARFOUND: next_state = LoadIn;
+		LoadIn: next_state = INCREMENT_X;
+		
+		INCREMENT_X: next_state = rightEdgeReached ? INCREMENT_Y : INCREMENT_X; // begin search for most bottom
+		
+		INCREMENT_Y: next_state = bottomEdgeReached ? DONESEARCH : INCREMENT_Y;
+		DONESEARCH: next_state = DONESEARCH;
+		default: next_state = STARFOUND;
 	
 	endcase
 
@@ -177,29 +179,29 @@ end
 
 
 //output logic/datapath control
-always@(posedge clk)
+always@(*)
 begin: enable_signals
-	pLoad <= 1'b0;
-	countXEn <= 1'b0;
-	countYEn <= 1'b0;
-	resetn <= 1'b1;
-	complete <=1'b0;
+	pLoad = 1'b0;
+	countXEn = 1'b0;
+	countYEn = 1'b0;
+	resetn = 1'b1;
+	complete =1'b0;
 	
 	case(current_state)
 		STARFOUND: begin
-			resetn <= 1'b0; // can i use this as a reset?
+			resetn = 1'b0; // can i use this as a reset?
 		end
 		LoadIn: begin
-			pLoad <= 1'b1;
+			pLoad = 1'b1;
 		end
 		INCREMENT_X: begin
-			countXEn <= 1'b1;
+			countXEn = 1'b1;
 		end
 		INCREMENT_Y: begin
-			countYEn <= 1'b1;
+			countYEn = 1'b1;
 		end
 		DONESEARCH: begin
-			complete <= 1'b1;
+			complete = 1'b1;
 		end
 	
 	endcase
@@ -210,7 +212,7 @@ end
 always@(posedge clk) begin
 	if(!starFoundn)
 		current_state <= STARFOUND;
-
+	else
 		current_state <= next_state;
 end
 
