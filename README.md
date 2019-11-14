@@ -133,7 +133,7 @@ module state_machine1(input resetn, clk, starFound, endOfImg, doneStarMap, xMax,
 					 DRAW_SQ = 4'd6,
 					 LOAD_COUNT = 4'd7,
 					 END_OF_IMG = 4'd8,
-					 OVERWRITE_STAR = 4'd9;//this state would turn star bkack so we dont check it again?
+					 OVERWRITE_STAR = 4'd9; //this state would turn star bkack so we dont check it again?
 	
 	//next state logic
 	always@(*)
@@ -200,8 +200,8 @@ module state_machine1(input resetn, clk, starFound, endOfImg, doneStarMap, xMax,
 endmodule
 
 /* This module converts a user specified coordinates into a memory address.
- * The output of the module depends on the resolution set by the user.
- */
+ The output of the module depends on the resolution set by the user.*/
+
 module address_translator(x, y, mem_address);
 
 	input [2:0] x; 
