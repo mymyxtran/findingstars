@@ -1,4 +1,19 @@
-module RowChecking(setMidPix, pLoad, xIn, yIn, countxREN, countYEn, clk, resetn, mostR, mostB, mostRightEN, mostBottomEN, rightEdgeReached);  
+module RowChecking(
+		setMidPix, 
+		pLoad, 
+		xIn, 
+		yIn, 
+		countxREN, 
+		countYEn, 
+		clk, 
+		resetn, 
+		mostR, 
+		mostB, 
+		mostRightEN, 
+		mostBottomEN, 
+		rightEdgeReached,
+		doneCalcMidPix,
+		doneCheck);  
 /* This module's purpose is to find the mostRight, mostbottom of the star. 
 Problem encountered: when looking for the bottom most pixel, the 2 most bottom points of the star
 are hard to identify. This code identifies the right most x value, but not the mostBottom. */
@@ -24,7 +39,8 @@ are hard to identify. This code identifies the right most x value, but not the m
 		input mostRightEN; // start this always block when signal is high
 		input mostBottomEN; // do comparison of previous mostBottomValue with current mostBottomValue
 
-		output doneRightColumnCheck; // right column check is completed
+		output doneCheck; //   check is completed
+		output doneCalcMidPix;
 		output rightEdgeReached;
 
 		//input x and y coor to load counters if required
@@ -32,7 +48,7 @@ are hard to identify. This code identifies the right most x value, but not the m
 		input[ySz-1:0] yIn;
 
 		output reg [xSz-1:0] mostR;
-		output reg [ySz-1:0] mostB;
+		output reg [ySz-1:0] mostB; 
 
 		reg [xSz-1:0] midPix; 
 
@@ -41,7 +57,7 @@ are hard to identify. This code identifies the right most x value, but not the m
 
 		wire[addrSz-1:0] addressOut;//address wire from translator
 
-		wire[colSz-1:0] pixVal;
+		wire[colSz-1:0] pixVal; 
 	
 	//instantiate the x counter
 	always@(posedge clk) begin
@@ -50,9 +66,8 @@ are hard to identify. This code identifies the right most x value, but not the m
 		else if(pLoad) // Initally, after the star is found, load in the x coordinate value.
 			xCount <= xIn;
 		else if(countXEn)
-			xCount <= xCount + 1;		
-		else if(setMidPix) // Input the midpix value after it has been calculated.
-			xCount <= midPix;	
+			xCount <= xCount + midPix + 1;		
+		
 	end
 	
 	//instantiate the y counter
@@ -95,10 +110,11 @@ are hard to identify. This code identifies the right most x value, but not the m
 				else
 				mostB = mostB;
 			end	
-		  if(calcMidPix == 1'b1) // Calculate the value of the middle pixel. This occurs once. midPix will be used as a starting point for looking for mostR.
+			
+		if(yCount == 1'b1) // Calculate the value of the middle pixel. This occurs once. midPix will be used as a starting point for looking for mostR.
 			begin 
 				midPix = (mostR + xCount) >> 1; // might need to change this
-			end 
+			end
    end
    
 endmodule
@@ -108,8 +124,14 @@ module controlRowChecker();
 always@(*)
 begin: state_table
 	case(current_state)
-		RESET: next_state = CHECK_COUNT;
-		CHECK_COUNT: next_state = (endOfImg) ? END_OF_IMG : CHECK_PIX;
+		RESET: next_state = LoadIn;
+		LoadIn: next_state = INCREMENT_X;
+		INCREMENT_X: next_state = edgeReached;
+		edgeReached: next_state = rightEdgeReached? CHECK_PIX : INCREMENT_X;
+		CHECK_PIX: begin
+				if(Finish
+		
+		
 	
 	
 	endcase
