@@ -1,0 +1,90 @@
+module checkRightRow(pLoad, xIn, yIn, countxREN, countYEn, clk, resetn, mostR, mostB, mostRightEN, mostBottomEN, edgeReached);  
+/* This module's purpose is to find the mostRight, mostbottom of the star. 
+Problem encountered: when looking for the bottom most pixel, the 2 most bottom points of the star
+are hard to identify. This code identifies the right most x value, but not the mostBottom. Thus, I 
+propose that when drawing the box of around the star, we may need to over draw the box. IDK.*/
+
+  parameter xSz = 3;
+	parameter ySz = 3;
+	parameter addrSz = 6;
+	parameter colSz = 3;
+	
+	//set the threshold for pixel value
+	localparam THRESHOLD = 0;
+	
+	input clk, resetn;
+	
+	// used to enable the right x counter 
+	input countxREn;
+	
+	input countYEn; //enable for counter y
+	
+	//input x and y coor to load counters if required
+	input[xSz-1:0] xIn;
+	input[ySz-1:0] yIn;
+	
+  
+	input starFound;//if star is found this counter begins
+  input mostRightEN; // start this always block when signal is high
+  input mostBottomEN; // do comparison of previous mostBottomValue with current mostBottomValue
+  
+	output doneRightColumnCheck; // right column check is completed
+  output edgeReached;
+  
+  output mostR;
+  output mostB;
+	
+	reg[xSz-1:0] xCount;//output wires for counters
+	reg[ySz-1:0] yCount;
+	
+	wire[addrSz-1:0] addressOut;//address wire from translator
+	
+	wire[colSz-1:0] pixVal;
+	
+	//instantiate the x counter
+	always@(posedge clk) begin
+		if(!resetn)
+			xCount <= 0;
+		else if(pLoad)
+			xCount <= xIn;
+		else if(countXEn)
+			xCount <= xCount + 1;			
+	end
+	
+	//instantiate the y counter
+	always@(posedge clk) begin
+		if(!resetn)
+			yCount <= 0;
+		else if(pLoad)
+			yCount <= yIn;
+		else if(countYEn)
+			yCount <= yCount + 1;			
+	end
+	
+  // use trans0 and ram0 for access to xCount pixval
+	//instantiate address translator // input your x,y coordinates // output is the address you want to access
+	address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
+  
+	//instantiate mem block
+	ram36x3 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
+
+  
+  // check for a black pixel (edge is reached) after incrementing the xCount by 1
+  assign edgeReached = (pixVal < THRESHOLD);
+  
+  // not done this will continue later
+  always@(*) begin
+    if(mostRightEN == 1) 
+        begin
+        if(mostR < xCount)
+          xCount = mostR;
+        else
+          xCount = xCount;
+        end
+   else if(mostBottomEN ==1)
+	
+	endcase
+
+  
+
+
