@@ -135,7 +135,7 @@ module state_machine1(input resetn, clk, starFound, endOfImg, doneStarMap, xMax,
 					 END_OF_IMG = 4'd8,
 					 OVERWRITE_STAR = 4'd9; //this state would turn star bkack so we dont check it again?
 	
-	//next state logic
+	//next state logic // consider changing it to rely on posedge clock
 	always@(*)
 	begin: state_table
 		case(current_state)
