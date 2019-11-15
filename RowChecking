@@ -1,47 +1,47 @@
-module checkRightRow(setMidPix, pLoad, xIn, yIn, countxREN, countYEn, clk, resetn, mostR, mostB, mostRightEN, mostBottomEN, rightEdgeReached);  
+module RowChecking(setMidPix, pLoad, xIn, yIn, countxREN, countYEn, clk, resetn, mostR, mostB, mostRightEN, mostBottomEN, rightEdgeReached);  
 /* This module's purpose is to find the mostRight, mostbottom of the star. 
 Problem encountered: when looking for the bottom most pixel, the 2 most bottom points of the star
 are hard to identify. This code identifies the right most x value, but not the mostBottom. */
 
-  	parameter xSz = 3;
-	parameter ySz = 3;
-	parameter addrSz = 6;
-	parameter colSz = 3;
+		parameter xSz = 3;
+		parameter ySz = 3;
+		parameter addrSz = 6;
+		parameter colSz = 3;
 
-	//set the threshold for pixel value
-	localparam THRESHOLD = 0;
+		//set the threshold for pixel value
+		localparam THRESHOLD = 0;
 
-	input clk, resetn;
-	
-	// Enable signals used in registers and combinational logic for counters and computing mostR, mostB
-	input countxREn; 	// used to enable the right x counter 
-	input countYEn; //enable for counter y
-	input pLoad; 
-	input calcMidPix; // This only occurs once. After the rightmost traversal, calculate the midpix value.
-	input setMidPix; // This only occurs once. After the calculation of the midpix value and the y-value is incremented for the first time.
+		input clk, resetn;
 
-	input starFound;//if star is found this counter begins
-  	input mostRightEN; // start this always block when signal is high
- 	input mostBottomEN; // do comparison of previous mostBottomValue with current mostBottomValue
-  
-	output doneRightColumnCheck; // right column check is completed
- 	output rightEdgeReached;
-	
-	//input x and y coor to load counters if required
-	input[xSz-1:0] xIn;
-	input[ySz-1:0] yIn;
-	
-  	output reg [xSz-1:0] mostR;
- 	output reg [ySz-1:0] mostB;
-	
-	reg [xSz-1:0] midPix; 
-	
-	reg[xSz-1:0] xCount;//output wires for counters
-	reg[ySz-1:0] yCount;
-	
-	wire[addrSz-1:0] addressOut;//address wire from translator
-	
-	wire[colSz-1:0] pixVal;
+		// Enable signals used in registers and combinational logic for counters and computing mostR, mostB
+		input countxREn; 	// used to enable the right x counter 
+		input countYEn; //enable for counter y
+		input pLoad; 
+		input calcMidPix; // This only occurs once. After the rightmost traversal, calculate the midpix value.
+		input setMidPix; // This only occurs once. After the calculation of the midpix value.
+
+		input starFound;//if star is found this counter begins
+		input mostRightEN; // start this always block when signal is high
+		input mostBottomEN; // do comparison of previous mostBottomValue with current mostBottomValue
+
+		output doneRightColumnCheck; // right column check is completed
+		output rightEdgeReached;
+
+		//input x and y coor to load counters if required
+		input[xSz-1:0] xIn;
+		input[ySz-1:0] yIn;
+
+		output reg [xSz-1:0] mostR;
+		output reg [ySz-1:0] mostB;
+
+		reg [xSz-1:0] midPix; 
+
+		reg[xSz-1:0] xCount;//output wires for counters
+		reg[ySz-1:0] yCount;
+
+		wire[addrSz-1:0] addressOut;//address wire from translator
+
+		wire[colSz-1:0] pixVal;
 	
 	//instantiate the x counter
 	always@(posedge clk) begin
@@ -66,42 +66,41 @@ are hard to identify. This code identifies the right most x value, but not the m
 		
 	end
  	
-// need to add code for what happens after you reach mostR... x count must reset to some value (the middle pixel of the pic)
+	// need to add code for what happens after you reach mostR... x count must reset to some value (the middle pixel of the pic)
 
-// use trans0 and ram0 for access to xCount pixval
-//instantiate address translator // input your x,y coordinates // output is the address you want to access
-address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
+	// use trans0 and ram0 for access to xCount pixval
+	//instantiate address translator // input your x,y coordinates // output is the address you want to access
+	address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
 
-//instantiate mem block
-ram36x3 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
+	//instantiate mem block
+	ram36x3 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
 
   // check for a black pixel (edge is reached) after incrementing the xCount by 1
   assign rightEdgeReached = (pixVal < THRESHOLD);
   
   // not done this, will continue later
-  always@(*) begin
-    if(mostRightEN == 1'b1)  // If at the checkPix state, enable mostRightEN to do comparison. If the mostR is smaller than the current x-value, then overwrite the current value of mostR.
-        begin
-        if(mostR < xCount)
-           mostR = xCount;
-        else
-          mostR = mostR;
-        end
-   if(mostBottomEN == 1'b1) // If at the checkPix state, enable mostBottomEN to do comparison.
-   	begin
-	if(mostB < yCount)
-	   mostB = yCount;
-	else
-	   mostB = mostB;
-	end	
-  if(calcMidPix == 1'b1) // Calculate the value of the middle pixel. This occurs once. midPix will be used as a starting point for looking for mostR.
-  	begin 
-	midPix = (mostR - xCount / 2); // might need to change this
-  	end 
+  always@(*) 
+  begin
+		if(mostRightEN == 1'b1)  // If at the checkPix state, enable mostRightEN to do comparison. If the mostR is smaller than the current x-value, then overwrite the current value of mostR.
+			begin
+				if(mostR < xCount)
+					mostR = xCount;
+				else
+					mostR = mostR;
+			end
+		if(mostBottomEN == 1'b1) // If at the checkPix state, enable mostBottomEN to do comparison.
+			begin
+				if(mostB < yCount)
+					mostB = yCount;
+				else
+				mostB = mostB;
+			end	
+		  if(calcMidPix == 1'b1) // Calculate the value of the middle pixel. This occurs once. midPix will be used as a starting point for looking for mostR.
+			begin 
+				midPix = (mostR + xCount) >> 1; // might need to change this
+			end 
    end
    
 endmodule
 
-  Note: if you reach the edge, then increment y and go back to your ref x value and the space is black, you are done
-
-
+ // Note: if you reach the edge, then increment y and go back to your ref x value and the space is black, you are done
