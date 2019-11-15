@@ -4,35 +4,35 @@ Problem encountered: when looking for the bottom most pixel, the 2 most bottom p
 are hard to identify. This code identifies the right most x value, but not the mostBottom. Thus, I 
 propose that when drawing the box of around the star, we may need to over draw the box. IDK.*/
 
-  parameter xSz = 3;
+  	parameter xSz = 3;
 	parameter ySz = 3;
 	parameter addrSz = 6;
 	parameter colSz = 3;
-	
+
 	//set the threshold for pixel value
 	localparam THRESHOLD = 0;
-	
+
 	input clk, resetn;
-	
+
 	// used to enable the right x counter 
 	input countxREn;
-	
+
 	input countYEn; //enable for counter y
-	
+
 	//input x and y coor to load counters if required
 	input[xSz-1:0] xIn;
 	input[ySz-1:0] yIn;
 	
   
 	input starFound;//if star is found this counter begins
-  input mostRightEN; // start this always block when signal is high
-  input mostBottomEN; // do comparison of previous mostBottomValue with current mostBottomValue
+  	input mostRightEN; // start this always block when signal is high
+ 	 input mostBottomEN; // do comparison of previous mostBottomValue with current mostBottomValue
   
 	output doneRightColumnCheck; // right column check is completed
-  output edgeReached;
+ 	output edgeReached;
   
-  output mostR;
-  output mostB;
+  	output reg [xSz-1:0] mostR;
+ 	output reg [ySz-1:0] mostB;
 	
 	reg[xSz-1:0] xCount;//output wires for counters
 	reg[ySz-1:0] yCount;
@@ -72,18 +72,26 @@ propose that when drawing the box of around the star, we may need to over draw t
   // check for a black pixel (edge is reached) after incrementing the xCount by 1
   assign edgeReached = (pixVal < THRESHOLD);
   
-  // not done this will continue later
+  // not done this, will continue later
   always@(*) begin
     if(mostRightEN == 1) 
         begin
         if(mostR < xCount)
-          xCount = mostR;
+           mostR = xCount;
         else
-          xCount = xCount;
+          mostR = mostR;
         end
    else if(mostBottomEN ==1)
-	
-	endcase
+   	begin
+	if(mostB < yCount)
+	   mostB = yCount;
+	else
+	   mostB = mostB;
+	end
+   	
+end
+
+endmodule
 
   
 
