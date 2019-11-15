@@ -59,6 +59,15 @@ are hard to identify. This code identifies the right most x value, but not the m
 
 		wire[colSz-1:0] pixVal; 
 	
+	always@(posedge clk) begin
+		always@(posedge clk) begin
+		if(!resetn)
+			originalX <= 0;
+		else if(pLoad) // Initally, after the star is found, load in the y coordinate value.
+			originalX <= xIn;
+
+	end
+	
 	//instantiate the x counter
 	always@(posedge clk) begin
 		if(!resetn)
@@ -78,9 +87,8 @@ are hard to identify. This code identifies the right most x value, but not the m
 			yCount <= yIn;
 		else if(countYEn) 
 			yCount <= yCount + 1;	
-		
 	end
- 	
+	
 	// need to add code for what happens after you reach mostR... x count must reset to some value (the middle pixel of the pic)
 
 	// use trans0 and ram0 for access to xCount pixval
@@ -111,7 +119,7 @@ are hard to identify. This code identifies the right most x value, but not the m
 				mostB = mostB;
 			end	
 			
-		if(yCount == 1'b1) // Calculate the value of the middle pixel. This occurs once. midPix will be used as a starting point for looking for mostR.
+		if(yCount == 0'b1) // Calculate the value of the middle pixel. This occurs once. midPix will be used as a starting point for looking for mostR.
 			begin 
 				midPix = (mostR + xCount) >> 1; // might need to change this
 			end
