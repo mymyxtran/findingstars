@@ -1,4 +1,4 @@
-module checkRightRow(pLoad, xIn, yIn, countxREN, countYEn, clk, resetn, mostR, mostB, mostRightEN, mostBottomEN, edgeReached);  
+module checkRightRow(pLoad, xIn, yIn, countxREN, countYEn, clk, resetn, mostR, mostB, mostRightEN, mostBottomEN, rightEdgeReached);  
 /* This module's purpose is to find the mostRight, mostbottom of the star. 
 Problem encountered: when looking for the bottom most pixel, the 2 most bottom points of the star
 are hard to identify. This code identifies the right most x value, but not the mostBottom. Thus, I 
@@ -29,7 +29,7 @@ propose that when drawing the box of around the star, we may need to over draw t
  	 input mostBottomEN; // do comparison of previous mostBottomValue with current mostBottomValue
   
 	output doneRightColumnCheck; // right column check is completed
- 	output edgeReached;
+ 	output rightEdgeReached;
   
   	output reg [xSz-1:0] mostR;
  	output reg [ySz-1:0] mostB;
@@ -60,7 +60,8 @@ propose that when drawing the box of around the star, we may need to over draw t
 		else if(countYEn)
 			yCount <= yCount + 1;			
 	end
-	
+ // need to add code for what happens after you reach mostR... x count must reset to some value (the middle pixle of the pic)
+ 
   // use trans0 and ram0 for access to xCount pixval
 	//instantiate address translator // input your x,y coordinates // output is the address you want to access
 	address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
@@ -70,7 +71,7 @@ propose that when drawing the box of around the star, we may need to over draw t
 
   
   // check for a black pixel (edge is reached) after incrementing the xCount by 1
-  assign edgeReached = (pixVal < THRESHOLD);
+  assign rightEdgeReached = (pixVal < THRESHOLD);
   
   // not done this, will continue later
   always@(*) begin
@@ -93,6 +94,6 @@ end
 
 endmodule
 
-  
+  Note: if you reach the edge, then increment y and go back to your ref x value and the space is black, you are done
 
 
