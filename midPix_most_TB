@@ -22,7 +22,7 @@ module midPix_most_TB(
 
 		input clk, resetn;
 
-		// Enable signals used in registers and combinational logic for counters and computing mostR, mostB
+		// Enable signals
 		input countXEn; 	// used to enable the right x counter 
 		input countYEn; //enable for counter y
 		input pLoad; 
