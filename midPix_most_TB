@@ -5,7 +5,7 @@ module midPix_most_TB(
 		countXEn, 
 		countYEn, 
 		clk, 
-		resetn, 
+		resetn, // need diff reset signal
 		mostBottom,
 		mostTop,
 		midPix,
@@ -115,4 +115,43 @@ begin: state_table
 
 end
 
- // Note: if you reach the edge, then increment y and go back to your ref x value and the space is black, you are done
+
+//output logic/datapath control
+always@(*)
+begin: enable_signals
+	pLoad = 1'b0;
+	countXEn = 1'b0;
+	countYEn = 1'b0;
+	reset = 1'b1;
+	complete =1'b0;
+	
+	case(current_state)
+		RESET: begin
+			reset = 1'b0; // can i use this as a reset?
+		end
+		LoadIn: begin
+			pLoad = 1'b1;
+		end
+		INCREMENT_X: begin
+			countXEn = 1'b1;
+		end
+		INCREMENT_Y: begin
+			countYEn = 1'b1;
+		end
+		DONESEARCH: begin
+			complete = 1'b1;
+		end
+	
+	endcase
+
+end
+
+//current state registers
+always@(posedge clk) begin
+	if(!resetn)
+		current_state <= RESET;
+	else
+		current_state <= next_state;
+end
+
+endmodule
