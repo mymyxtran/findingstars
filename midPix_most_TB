@@ -61,7 +61,7 @@ module midPix_most_TB(
 			xOriginal <= xIn;
 			end
 		else if(countXEn)
-			xCount <= xCount + 1;		
+			xCount <= xCount + 1'd1;		
 		
 	end
 	
@@ -76,7 +76,7 @@ module midPix_most_TB(
 			yCount <= yIn;
 			yOriginal <= yIn;
 		else if(countYEn)
-			yCount <= yCount + 1;	
+			yCount <= yCount + 1'd1;	
 	end
 	
 	// use trans0 and ram0 for access to xCount pixval
@@ -99,10 +99,18 @@ module midPix_most_TB(
 	assign mostTop = yOriginal;
 
 
-module control();
+module control(
+		input rightEdgeReached,
+		bottomEdgeReached,
+		output reg pLoad, 
+		countXEn,
+		countYEn,
+		reset,
+		complete);
 
 always@(*)
 begin: state_table
+	
 	
 	case(current_state)
 		RESET: next_state = LoadIn;
