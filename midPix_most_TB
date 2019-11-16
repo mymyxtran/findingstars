@@ -107,11 +107,17 @@ module control(
 		countYEn,
 		reset,
 		complete);
+		
+reg [3:0] current_state, next_state;
 
 always@(*)
 begin: state_table
 	
-	
+	localparam	RESET = 4'd0,
+			LoadIn = 4'd1,
+			INCREMENT_X = 4'd2,
+			INCREMENT_Y = 4'd3;
+			
 	case(current_state)
 		RESET: next_state = LoadIn;
 		LoadIn: next_state = INCREMENT_X;
