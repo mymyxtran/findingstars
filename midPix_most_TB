@@ -92,7 +92,7 @@ module midPix_most_TB(
 	// This signal stop datapath, since all calculations are complete.
 	assign bottomEdgeREACHED = (pixVal < THRESHOLD) && (countYEn == 1'b1);
 
-	// Once bottomEdge is found mostBottom will have the highest yvalue coordinate stored, yCount.
+	// Once bottomEdge is found, mostBottom will have the highest yvalue coordinate stored, yCount.
 	assign mostBottom = yCount;
 	
 	// Output this for easier input into next fsm.
@@ -103,14 +103,13 @@ module controlRowChecker();
 
 always@(*)
 begin: state_table
+	
 	case(current_state)
 		RESET: next_state = LoadIn;
 		LoadIn: next_state = INCREMENT_X;
 		INCREMENT_X: next_state = rightEdgeReached? INCREMENT_Y : INCREMENT_X; // begin search for most bottom
-		INCREMENT_Y: next_state = mostBottomLocated? DONESEARCH : INCREMENT_Y;
-		
-		
-	
+		INCREMENT_Y: next_state = bottomEdgeReached? DONESEARCH : INCREMENT_Y;
+		DEFAULT: next_state = RESET;
 	
 	endcase
 
