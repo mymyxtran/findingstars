@@ -54,26 +54,24 @@ are hard to identify. This code identifies the right most x value, but not the m
 
 		reg[xSz-1:0] xCount;//output wires for counters
 		reg[ySz-1:0] yCount;
+		reg[xSz-1:0] originialX; // keep the original x value so that the midpix value never changes
 
 		wire[addrSz-1:0] addressOut;//address wire from translator
 
 		wire[colSz-1:0] pixVal; 
 	
-	always@(posedge clk) begin
-		always@(posedge clk) begin
-		if(!resetn)
-			originalX <= 0;
-		else if(pLoad) // Initally, after the star is found, load in the y coordinate value.
-			originalX <= xIn;
-
-	end
-	
 	//instantiate the x counter
 	always@(posedge clk) begin
-		if(!resetn)
-			xCount <= 0;
-		else if(pLoad) // Initally, after the star is found, load in the x coordinate value.
-			xCount <= xIn;
+		if(!resetn) 
+			begin
+				xCount <= 0;
+				originalX <= 0;
+			end
+		else if(pLoad) 
+			begin // Initally, after the star is found, load in the x coordinate value.
+				xCount <= xIn;			
+				originalX <= 0;
+			end
 		else if(countXEn)
 			xCount <= xCount + midPix + 1;		
 		
@@ -119,9 +117,9 @@ are hard to identify. This code identifies the right most x value, but not the m
 				mostB = mostB;
 			end	
 			
-		if(yCount == 0'b1) // Calculate the value of the middle pixel. This occurs once. midPix will be used as a starting point for looking for mostR.
+		 // Calculate the value of the middle pixel. This occurs once. midPix will be used as a starting point for looking for mostR.
 			begin 
-				midPix = (mostR + xCount) >> 1; // might need to change this
+				midPix = (mostR + originalX) >> 1; // might need to change this
 			end
    end
    
