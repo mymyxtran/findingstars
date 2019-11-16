@@ -99,7 +99,7 @@ module midPix_most_TB(
 	assign mostTop = yOriginal;
 
 
-module controlRowChecker();
+module control();
 
 always@(*)
 begin: state_table
