@@ -1,22 +1,16 @@
-module RowChecking(
-		setMidPix, 
+module midPix_most_TB(
 		pLoad, 
 		xIn, 
 		yIn, 
-		countxREN, 
+		countXEn, 
 		countYEn, 
 		clk, 
 		resetn, 
-		mostR, 
-		mostB, 
-		mostRightEN, 
-		mostBottomEN, 
+		mostBottom,
+		mostTop,
+		midPix,
 		rightEdgeReached,
-		doneCalcMidPix,
-		doneCheck);  
-/* This module's purpose is to find the mostRight, mostbottom of the star. 
-Problem encountered: when looking for the bottom most pixel, the 2 most bottom points of the star
-are hard to identify. This code identifies the right most x value, but not the mostBottom. */
+		bottomEdgeReached);  
 
 		parameter xSz = 3;
 		parameter ySz = 3;
@@ -29,32 +23,27 @@ are hard to identify. This code identifies the right most x value, but not the m
 		input clk, resetn;
 
 		// Enable signals used in registers and combinational logic for counters and computing mostR, mostB
-		input countxREn; 	// used to enable the right x counter 
+		input countXEn; 	// used to enable the right x counter 
 		input countYEn; //enable for counter y
 		input pLoad; 
-		input calcMidPix; // This only occurs once. After the rightmost traversal, calculate the midpix value.
-		input setMidPix; // This only occurs once. After the calculation of the midpix value.
 
 		input starFound;//if star is found this counter begins
-		input mostRightEN; // start this always block when signal is high
-		input mostBottomEN; // do comparison of previous mostBottomValue with current mostBottomValue
 
-		output doneCheck; //   check is completed
-		output doneCalcMidPix;
 		output rightEdgeReached;
+		output bottomEdgeReached;
 
 		//input x and y coor to load counters if required
 		input[xSz-1:0] xIn;
 		input[ySz-1:0] yIn;
 
-		output reg [xSz-1:0] mostR;
-		output reg [ySz-1:0] mostB; 
-
-		reg [xSz-1:0] midPix; 
+		output [ySz-1:0] mostBottom; 
+		output [ySz-1:0] mostTop; 
+		output [xSz-1:0] midPix; // Will be used to calculate right and left most. 
 
 		reg[xSz-1:0] xCount;//output wires for counters
 		reg[ySz-1:0] yCount;
-		reg[xSz-1:0] originialX; // keep the original x value so that the midpix value never changes
+	        reg[xSz-1:0] xOriginal; // store inital x value to calculate midpix
+		reg[xSz-1:0] yOriginal; // store inital y value to have top most
 
 		wire[addrSz-1:0] addressOut;//address wire from translator
 
@@ -64,18 +53,20 @@ are hard to identify. This code identifies the right most x value, but not the m
 	always@(posedge clk) begin
 		if(!resetn) 
 			begin
-				xCount <= 0;
-				originalX <= 0;
+			xCount <= 0;
 			end
 		else if(pLoad) 
 			begin // Initally, after the star is found, load in the x coordinate value.
-				xCount <= xIn;			
-				originalX <= 0;
+			xCount <= xIn;	
+			xOriginal <= xIn;
 			end
 		else if(countXEn)
-			xCount <= xCount + midPix + 1;		
+			xCount <= xCount + 1;		
 		
 	end
+	
+	// This value will not change once we start looking for the most bottom, since xCount and xOriginal do not change.
+	assign midPix = (xCount + xOriginal) >> 1; // using the right most value and the orignal calculate the midpix
 	
 	//instantiate the y counter
 	always@(posedge clk) begin
@@ -83,12 +74,11 @@ are hard to identify. This code identifies the right most x value, but not the m
 			yCount <= 0;
 		else if(pLoad) // Initally, after the star is found, load in the y coordinate value.
 			yCount <= yIn;
-		else if(countYEn) 
+			yOriginal <= yIn;
+		else if(countYEn)
 			yCount <= yCount + 1;	
 	end
 	
-	// need to add code for what happens after you reach mostR... x count must reset to some value (the middle pixel of the pic)
-
 	// use trans0 and ram0 for access to xCount pixval
 	//instantiate address translator // input your x,y coordinates // output is the address you want to access
 	address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
@@ -96,34 +86,18 @@ are hard to identify. This code identifies the right most x value, but not the m
 	//instantiate mem block
 	ram36x3 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
 
-  // check for a black pixel (edge is reached) after incrementing the xCount by 1
-  assign rightEdgeReached = (pixVal < THRESHOLD);
-  
-  // not done this, will continue later
-  always@(*) 
-  begin
-		if(mostRightEN == 1'b1)  // If at the checkPix state, enable mostRightEN to do comparison. If the mostR is smaller than the current x-value, then overwrite the current value of mostR.
-			begin
-				if(mostR < xCount)
-					mostR = xCount;
-				else
-					mostR = mostR;
-			end
-		if(mostBottomEN == 1'b1) // If at the checkPix state, enable mostBottomEN to do comparison.
-			begin
-				if(mostB < yCount)
-					mostB = yCount;
-				else
-				mostB = mostB;
-			end	
-			
-		 // Calculate the value of the middle pixel. This occurs once. midPix will be used as a starting point for looking for mostR.
-			begin 
-				midPix = (mostR + originalX) >> 1; // might need to change this
-			end
-   end
-   
-endmodule
+	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
+	assign rightEdgeReached = (pixVal < THRESHOLD); // This signal indicates when to start mostBottom traversal.
+	
+	// This signal stop datapath, since all calculations are complete.
+	assign bottomEdgeREACHED = (pixVal < THRESHOLD) && (countYEn == 1'b1);
+
+	// Once bottomEdge is found mostBottom will have the highest yvalue coordinate stored, yCount.
+	assign mostBottom = yCount;
+	
+	// Output this for easier input into next fsm.
+	assign mostTop = yOriginal;
+
 
 module controlRowChecker();
 
@@ -132,10 +106,8 @@ begin: state_table
 	case(current_state)
 		RESET: next_state = LoadIn;
 		LoadIn: next_state = INCREMENT_X;
-		INCREMENT_X: next_state = edgeReached;
-		edgeReached: next_state = rightEdgeReached? CHECK_PIX : INCREMENT_X;
-		CHECK_PIX: begin
-				if(Finish
+		INCREMENT_X: next_state = rightEdgeReached? INCREMENT_Y : INCREMENT_X; // begin search for most bottom
+		INCREMENT_Y: next_state = mostBottomLocated? DONESEARCH : INCREMENT_Y;
 		
 		
 	
