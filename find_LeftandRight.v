@@ -1,5 +1,5 @@
 module test(
-				input clk, starFoundn, input [2:0]xIn,
+				input clk, TopandBottomFound, input [2:0]xIn,
 				input [2:0] yIn);
 				
 				
@@ -35,7 +35,7 @@ module test(
 										.countXEn(countXEn),
 										.countYEn(countYEn),
 										.resetn(resetn), // used to reset counters in data path
-										.complete(complete)); 
+										.Top(complete)); 
 									
 
 endmodule
