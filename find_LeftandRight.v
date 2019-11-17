@@ -1,59 +1,52 @@
-// I realised that to start this module, we need the starFound signal to be high THEN low.... because right now, I am driving the signal high then low
 module test(
-				input clk, starFound, input [2:0]xIn,
-				input [2:0] yIn);
+	input clk, TopandBottomFound, input [2:0]mostTop, input [2:0]mostBottom, input [2:0] midPix, output [2:0] mostRight, output [2:0] mostLeft);				
 				
-				
-				wire resetn, countXEn, countYEn, pLoad, mostBottom, mostTop, rightEdgeReached, bottomEdgeReached, TopandBottomFound; 
-				wire [2:0]midPix;
-
-				
-	findTopandBottom u1(	 	//inputs
-									.clk(clk), 
-									.resetn(resetn),
-									.countXEn(countXEn), 
-									.countYEn(countYEn),  
-									.pLoad(pLoad), 
-									.xIn(xIn), 
-									.yIn(yIn), 
-									
-									//outputs
-									.mostBottom(mostBottom), 
-									.mostTop(mostTop), 
-									.midPix(midPix),
-									.rightEdgeReached(rightEdgeReached),
-									.bottomEdgeReached(bottomEdgeReached)); 	
-								
-	controlTopandBottom u2( 	
-										//inputs
-										.rightEdgeReached(rightEdgeReached),
-										.bottomEdgeReached(bottomEdgeReached), 
-										.clk(clk),
-										.starFound(starFound),
-										
-										//outputs
-										.pLoad(pLoad), 
-										.countXEn(countXEn),
-										.countYEn(countYEn),
-										.resetn(resetn), // used to reset counters in data path
-										.TopandBottomFound(TopandBottomFound)); 
-									
+				wire resetn, countXEn, countYEn, ld_x, ld_y, rightEdgeReached, bottomEdgeReached;	
+	find_Right r1(		//inputs
+				.ld_x(ld_x), 
+				.ld_y(ld_y), 
+				.midPix(midPix), 
+				.mostBottom(mostBottom),
+				.mostTop(mostTop),
+				.countXEn(countXEn), 
+				.countYEn(countYEn), 
+				.clk(clk), 
+				.resetn(resetn), 
+		
+				// outputs
+				.bottomEdgeReached(bottomEdgeReached),
+				.rightEdgeReached(rightEdgeReached), 
+				.mostRight(mostRight)
+			); 
+	
+	controlRight c1(	// inputs
+				.rightEdgeReached(rightEdgeReached),
+				.bottomEdgeReached(bottomEdgeReached), 
+				.clk(clk), 
+				.TopandBottomFound(TopandBottomFound),
+		
+				// outputs
+				.ld_x(ld_x), 
+				.ld_y(ld_y),
+				.countXEn(countXEn),
+				.countYEn(countYEn),
+				.resetn(resetn)
+			);
 
 endmodule
 
-module findTopandBottom(
-		pLoad, 
-		xIn, 
-		yIn, 
+module find_Right(
+		ld_x, ld_y, 
+		midPix, 
+		mostBottom,
+		mostTop,
 		countXEn, 
 		countYEn, 
 		clk, 
-		resetn, // need diff reset signal
-		mostBottom,
-		mostTop,
-		midPix,
-		rightEdgeReached,
+		resetn, 
 		bottomEdgeReached,
+		rightEdgeReached, 
+		mostRight
 		);  
 
 	parameter xSz = 3;
@@ -67,27 +60,23 @@ module findTopandBottom(
 	input clk, resetn;
 
 	// Enable signals
-	input countXEn; 	// used to enable the right x counter 
+	input countXEn; // used to enable the right x counter 
 	input countYEn; //enable for counter y
 	input pLoad; 
 
+	// get input values from the findTopandBottom module
+	input [ySz-1:0] mostBottom; 
+	input [ySz-1:0] mostTop; 
+	input [xSz-1:0] midPix; 
 
+	// output signals for control
 	output rightEdgeReached;
-	output bottomEdgeReached;
-
-	//input x and y coor to load counters if required
-	input[xSz-1:0] xIn;
-	input[ySz-1:0] yIn;
-
-	output [ySz-1:0] mostBottom; 
-	output [ySz-1:0] mostTop; 
-	output [xSz-1:0] midPix; // Will be used to calculate right and left most. 
-
+	output rightFound;
+	output [ySz-1:0] mostRight;
+	
 	reg[xSz-1:0] xCount;//output wires for counters
 	reg[ySz-1:0] yCount;
-		  reg[xSz-1:0] xOriginal; // store inital x value to calculate midpix
-	reg[xSz-1:0] yOriginal; // store inital y value to have top most
-
+	
 	wire[addrSz-1:0] addressOut;//address wire from translator
 
 	wire[colSz-1:0] pixVal; 
@@ -98,28 +87,24 @@ module findTopandBottom(
 		if(!resetn) begin
 			xCount <= 0;
 		end
-		else if(pLoad) begin // Initally, after the star is found, load in the x coordinate value.
-			xCount <= xIn;	
-			xOriginal <= xIn;
+		else if(ld_x) begin // After TopandBottom is found or when you move down one row, load in the midpix value.
+			xCount <= midPix;	
 		end
-		else if(countXEn)
-			xCount <= xCount + 1'd1;		
-		
+		else if(countXEn) begin
+			xCount <= xCount + 1'd1; // traverse right until the mostRightEdge		
+		end
 	end
-	
-	// This value will not change once we start looking for the most bottom, since xCount and xOriginal do not change.
-	assign midPix = (xCount + xOriginal) >> 1; // using the right most value and the orignal calculate the midpix
-	
+		
 	//instantiate the y counter
 	always@(posedge clk) begin
 		if(!resetn)
 			yCount <= 0;
-		else if(pLoad) begin //initally, after the star is found, load in the y coordinate value.
-			yCount <= yIn;
-			yOriginal <= yIn;
+		else if(ld_y) begin // Initially, when find_LeftandRight begin load in the mosttop value.
+			yCount <= mostTop; // start at the most top of the shape
 		end
-		else if(countYEn)
-			yCount <= yCount + 1'd1;	
+		else if(countYEn) begin
+			yCount <= yCount + 1'd1;
+		end
 	end
 	
 	// use trans0 and ram0 for access to xCount pixval
@@ -130,49 +115,48 @@ module findTopandBottom(
 	ram36x3_1 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
 
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
-	assign rightEdgeReached = (pixVal == THRESHOLD); // This signal indicates when to start mostBottom traversal.
+	assign rightEdgeReached = (pixVal == THRESHOLD); // 
+	
+	always@(*) begin
+		if(rightEdgeReached) begin // if an edge is reached, check its value is larger than the current mostRight
+			if(mostRight < xCount) begin // if most right  is less than the current xvalue, change it!
+				mostRight = xCount
+			end
+		end
+	end
 	
 	// This signal stop datapath, since all calculations are complete.
-	assign bottomEdgeReached = (pixVal == THRESHOLD) && (countYEn == 1'd1);
-
-	// Once bottomEdge is found, mostBottom will have the highest yvalue coordinate stored, yCount.
-	assign mostBottom = yCount;
-	
-	// Output this for easier input into next fsm.
-	assign mostTop = yOriginal;
+	assign bottomEdgeReached = (yCount == mostBottom); 
 
 endmodule 
 
-module controlTopandBottom(
+module controlRight(
 		input rightEdgeReached,
-		bottomEdgeReached, clk, starFound,
-		output reg pLoad, 
+		bottomEdgeReached, clk, TopandBottomFound,
+		output reg ld_x, ld_y, 
 		countXEn,
 		countYEn,
 		resetn,
-		TopandBottomFound);
-		
+		);
 		
 reg [3:0] current_state, next_state;
 
-localparam	STARFOUND = 4'd0,
+localparam		TOPANDBOTTOMFOUND = 4'd0,
 			LoadIn = 4'd1,
 			INCREMENT_X = 4'd2,
 			INCREMENT_Y = 4'd3,
-			DONESEARCH = 4'd4;
+			RIGHTFOUND = 4'd4;
 
 always@(*)
 begin: state_table
 			
 	case(current_state)
-		STARFOUND: next_state = LoadIn;
+		TOPANDBOTTOMFOUND: next_state = LoadIn;
 		LoadIn: next_state = INCREMENT_X;
-		
 		INCREMENT_X: next_state = rightEdgeReached ? INCREMENT_Y : INCREMENT_X; // begin search for most bottom
-		
-		INCREMENT_Y: next_state = bottomEdgeReached ? DONESEARCH : INCREMENT_Y;
-		DONESEARCH: next_state = DONESEARCH;
-		default: next_state = STARFOUND;
+		INCREMENT_Y: next_state = bottomEdgeReached ? RIGHTFOUND : INCREMENT_Y;
+		RIGHTFOUND: next_state = RIGHTFOUND;
+		default: next_state = TOPANDBOTTOMFOUND;
 	
 	endcase
 
@@ -182,27 +166,30 @@ end
 //output logic/datapath control
 always@(*)
 begin: enable_signals
-	pLoad = 1'b0;
+	ld_x = 1'b0;
+	ld_y = 1'b0;
 	countXEn = 1'b0;
 	countYEn = 1'b0;
 	resetn = 1'b1;
-	TopandBottomFound =1'b0;
+	rightFound =1'b0;
 	
 	case(current_state)
-		STARFOUND: begin
+		TOPANDBOTTOM: begin
 			resetn = 1'b0; // can i use this as a reset?
 		end
 		LoadIn: begin
-			pLoad = 1'b1;
+			ld_x = 1'b1;
+			ld_y = 1'b1;
 		end
 		INCREMENT_X: begin
 			countXEn = 1'b1;
 		end
 		INCREMENT_Y: begin
 			countYEn = 1'b1;
+			ld_x = 1; // essentially reset x
 		end
-		DONESEARCH: begin
-			TopandBottomFound = 1'b1;
+		RIGHTFOUND: begin
+			rightFound = 1'b1;
 		end
 	
 	endcase
@@ -211,8 +198,8 @@ end
 
 //current state registers
 always@(posedge clk) begin
-	if(starFound)
-		current_state <= STARFOUND;
+	if(TopandBottomFound)
+		current_state <= TOPANDBOTTOMFOUND;
 	else
 		current_state <= next_state;
 end
