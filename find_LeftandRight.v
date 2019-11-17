@@ -2,8 +2,8 @@
  * top-level module << test >> which enables finding the left and right edge of a shape to 
  * happen at the same time. */
 
-// Note: the TopandBottomFound signal needs to go high then low, to start the fsm initally... So that it knows what state to be in first
-//       Or is this unnecessary?
+/* Note: The TopandBottomFound signal needs to go high then low, to start the fsm initally... So that it knows what state to be in first.
+ *       Or is this unnecessary? */
 module test(
 	input clk, TopandBottomFound, input [2:0]mostTop, input [2:0]mostBottom, input [2:0] midPix, 
 	output [2:0] mostRight, output [2:0] mostLeft, output rightFound, output leftFound);				
