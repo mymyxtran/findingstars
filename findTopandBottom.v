@@ -4,7 +4,7 @@ module test(
 				input [2:0] yIn);
 				
 				
-				wire resetn, countXEn, countYEn, pLoad, mostBottom, mostTop, rightEdgeReached, bottomEdgeReached, complete; 
+				wire resetn, countXEn, countYEn, pLoad, mostBottom, mostTop, rightEdgeReached, bottomEdgeReached, TopandBottomFound; 
 				wire [2:0]midPix;
 
 				
@@ -36,7 +36,7 @@ module test(
 										.countXEn(countXEn),
 										.countYEn(countYEn),
 										.resetn(resetn), // used to reset counters in data path
-										.complete(complete)); 
+										.TopandBottomFound(TopandBottomFound)); 
 									
 
 endmodule
@@ -150,7 +150,7 @@ module controlTopandBottom(
 		countXEn,
 		countYEn,
 		resetn,
-		complete);
+		TopandBottomFound);
 		
 		
 reg [3:0] current_state, next_state;
@@ -186,7 +186,7 @@ begin: enable_signals
 	countXEn = 1'b0;
 	countYEn = 1'b0;
 	resetn = 1'b1;
-	complete =1'b0;
+	TopandBottomFound =1'b0;
 	
 	case(current_state)
 		STARFOUND: begin
@@ -202,7 +202,7 @@ begin: enable_signals
 			countYEn = 1'b1;
 		end
 		DONESEARCH: begin
-			complete = 1'b1;
+			TopandBottomFound = 1'b1;
 		end
 	
 	endcase
