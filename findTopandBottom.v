@@ -1,10 +1,10 @@
 // I realised that to start this module, we need the starFound signal to be high THEN low.... because right now, I am driving the signal high then low
 module test(
 				input clk, starFound, input [2:0]xIn,
-				input [2:0] yIn);
+				input [2:0] yIn, output [2:0] mostBottom, [2:0] mostTop);
 				
 				
-				wire resetn, countXEn, countYEn, pLoad, mostBottom, mostTop, rightEdgeReached, bottomEdgeReached, TopandBottomFound; 
+				wire resetn, countXEn, countYEn, pLoad, rightEdgeReached, bottomEdgeReached, TopandBottomFound; 
 				wire [2:0]midPix;
 
 				
