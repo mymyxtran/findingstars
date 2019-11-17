@@ -1,7 +1,13 @@
+/* This v file has the mdoules find_Right, control_R, find_Left, control_L, and a 
+ * top-level module << test >> which enables finding the left and right edge of a shape to 
+ * happen at the same time. */
 module test(
-	input clk, TopandBottomFound, input [2:0]mostTop, input [2:0]mostBottom, input [2:0] midPix, output [2:0] mostRight, output [2:0] mostLeft, output rightFound);				
+	input clk, TopandBottomFound, input [2:0]mostTop, input [2:0]mostBottom, input [2:0] midPix, 
+	output [2:0] mostRight, output [2:0] mostLeft, output rightFound);				
 				
-				wire resetn, R_countXEn, R_countYEn, ld_x, ld_y, rightEdgeReached, doneR;	
+	wire resetn, ld_x, ld_y; // wires used by all modules
+	
+	wire  R_countXEn, R_countYEn, rightEdgeReached, doneR;  // wires used by the find_Right
 	find_Right r1(		//inputs
 				.ld_x(ld_x), 
 				.ld_y(ld_y), 
@@ -34,7 +40,7 @@ module test(
 				.rightFound(rightFound)
 			);
 	
-	wire L_countXEn, L_countYEn, leftEdgeReached, doneL;	
+	wire L_countXEn, L_countYEn, leftEdgeReached, doneL;	// wires used by the find_Left
 	
 	find_Left l1(		//inputs
 				.ld_x(ld_x), 
