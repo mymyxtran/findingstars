@@ -1,37 +1,71 @@
 module test(
 	input clk, TopandBottomFound, input [2:0]mostTop, input [2:0]mostBottom, input [2:0] midPix, output [2:0] mostRight, output [2:0] mostLeft, output rightFound);				
 				
-				wire resetn, countXEn, countYEn, ld_x, ld_y, rightEdgeReached, bottomEdgeReached;	
+				wire resetn, R_countXEn, R_countYEn, ld_x, ld_y, rightEdgeReached, doneR;	
 	find_Right r1(		//inputs
 				.ld_x(ld_x), 
 				.ld_y(ld_y), 
 				.midPix(midPix), 
 				.mostBottom(mostBottom),
 				.mostTop(mostTop),
-				.countXEn(countXEn), 
-				.countYEn(countYEn), 
+				.countXEn(R_countXEn), 
+				.countYEn(R_countYEn), 
 				.clk(clk), 
 				.resetn(resetn), 
 		
 				// outputs
-				.bottomEdgeReached(bottomEdgeReached),
+				.doneR(doneR),
 				.rightEdgeReached(rightEdgeReached), 
 				.mostRight(mostRight)
 			); 
 	
-	controlRight c1(	// inputs
+	control_Right cR(	// inputs
 				.rightEdgeReached(rightEdgeReached),
-				.bottomEdgeReached(bottomEdgeReached), 
+				.doneR(doneR), 
 				.clk(clk), 
 				.TopandBottomFound(TopandBottomFound),
 		
 				// outputs
 				.ld_x(ld_x), 
 				.ld_y(ld_y),
-				.countXEn(countXEn),
-				.countYEn(countYEn),
+				.countXEn(R_countXEn),
+				.countYEn(R_countYEn),
 				.resetn(resetn),
 				.rightFound(rightFound)
+			);
+	
+	wire L_countXEn, L_countYEn, leftEdgeReached, doneL;	
+	
+	find_Left l1(		//inputs
+				.ld_x(ld_x), 
+				.ld_y(ld_y), 
+				.midPix(midPix), 
+				.mostBottom(mostBottom),
+				.mostTop(mostTop),
+				.countXEn(L_countXEn), 
+				.countYEn(L_countYEn), 
+				.clk(clk), 
+				.resetn(resetn), 
+		
+				// outputs
+				.doneL(doneL),
+				.leftEdgeReached(leftEdgeReached), 
+				.mostRight(mostRight)
+			); 
+	
+	control_Left cL(	// inputs
+				.leftEdgeReached(leftEdgeReached),
+				.doneR(doneR), 
+				.clk(clk), 
+				.TopandBottomFound(TopandBottomFound),
+		
+				// outputs
+				.ld_x(ld_x), 
+				.ld_y(ld_y),
+				.countXEn(L_countXEn),
+				.countYEn(L_countYEn),
+				.resetn(resetn),
+				.leftFound(leftFound)
 			);
 
 endmodule
@@ -45,7 +79,7 @@ module find_Right(
 		countYEn, 
 		clk, 
 		resetn, 
-		bottomEdgeReached,
+		doneR,
 		rightEdgeReached, 
 		mostRight
 		);  
@@ -73,7 +107,7 @@ module find_Right(
 
 	// output signals for control
 	output rightEdgeReached;
-	output bottomEdgeReached;
+	output doneR;
 	output reg [ySz-1:0] mostRight;
 	
 	reg[xSz-1:0] xCount;//output wires for counters
@@ -128,13 +162,13 @@ module find_Right(
 	end
 	
 	// This signal stop datapath, since all calculations are complete.
-	assign bottomEdgeReached = (yCount == mostBottom); 
+	assign doneR = (yCount == mostBottom); 
 
 endmodule 
 
-module controlRight(
+module control_Right(
 		input rightEdgeReached,
-		bottomEdgeReached, clk, TopandBottomFound,
+		doneR, clk, TopandBottomFound,
 		output reg ld_x, ld_y, 
 		countXEn,
 		countYEn,
@@ -157,7 +191,7 @@ begin: state_table
 		TOPANDBOTTOMFOUND: next_state = LoadIn;
 		LoadIn: next_state = INCREMENT_X;
 		INCREMENT_X: next_state = rightEdgeReached ? INCREMENT_Y : INCREMENT_X; // begin search for most bottom
-		INCREMENT_Y: next_state = bottomEdgeReached ? RIGHTFOUND : INCREMENT_Y;
+		INCREMENT_Y: next_state = doneR ? RIGHTFOUND : INCREMENT_Y;
 		RIGHTFOUND: next_state = RIGHTFOUND;
 		default: next_state = TOPANDBOTTOMFOUND;
 	
@@ -229,4 +263,181 @@ module address_translator(x, y, mem_address);
 	
 
 endmodule
+
+
+
+module find_Left(
+		ld_x, ld_y, 
+		midPix, 
+		mostBottom,
+		mostTop,
+		countXEn, 
+		countYEn, 
+		clk, 
+		resetn, 
+		doneL,
+		leftEdgeReached, 
+		mostLeft
+		);  
+
+	parameter xSz = 3;
+	parameter ySz = 3;
+	parameter addrSz = 6;
+	parameter colSz = 3;
+
+	//set the threshold for pixel value
+	localparam THRESHOLD = 0;
+
+	input clk, resetn;
+
+	// Enable signals
+	input countXEn; // used to enable the right x counter 
+	input countYEn; //enable for counter y
+	input ld_x; 
+	input ld_y;
+
+	// get input values from the findTopandBottom module
+	input [ySz-1:0] mostBottom; 
+	input [ySz-1:0] mostTop; 
+	input [xSz-1:0] midPix; 
+
+	// output signals for control
+	output leftEdgeReached;
+	output doneL;
+	output reg [ySz-1:0] mostLeft;
+	
+	reg[xSz-1:0] xCount;//output wires for counters
+	reg[ySz-1:0] yCount;
+	
+	wire[addrSz-1:0] addressOut;//address wire from translator
+
+	wire[colSz-1:0] pixVal; 
+	
+	//instantiate the x counter
+	always@(posedge clk) begin
+	
+		if(!resetn) begin
+			xCount <= 0;
+		end
+		else if(ld_x) begin // After TopandBottom is found or when you move down one row, load in the midpix value.
+			xCount <= midPix;	
+		end
+		else if(countXEn) begin
+			xCount <= xCount - 1'd1; // traverse right until the mostRightEdge		
+		end
+	end
+		
+	//instantiate the y counter
+	always@(posedge clk) begin
+		if(!resetn)
+			yCount <= 0;
+		else if(ld_y) begin // Initially, when find_LeftandRight begin load in the mosttop value.
+			yCount <= mostTop; // start at the most top of the shape
+		end
+		else if(countYEn) begin
+			yCount <= yCount + 1'd1;
+		end
+	end
+	
+	// use trans0 and ram0 for access to xCount pixval
+	//instantiate address translator // input your x,y coordinates // output is the address you want to access
+	address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
+
+	//instantiate mem block
+	ram36x3_1 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
+
+	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
+	assign leftEdgeReached = (pixVal == THRESHOLD); // 
+	
+	always@(posedge clk) begin
+		if(leftEdgeReached) begin // if an edge is reached, check its value is larger than the current mostRight
+			if(mostLeft > xCount) begin // if most right  is less than the current xvalue, change it!
+				mostLeft <= xCount;
+			end
+		end
+	end
+	
+	// This signal stop datapath, since all calculations are complete.
+	assign doneL = (yCount == mostBottom); 
+
+endmodule 
+
+module control_Left(
+		input leftEdgeReached,
+		doneL, clk, TopandBottomFound,
+		output reg ld_x, ld_y, 
+		countXEn,
+		countYEn,
+		resetn,
+		leftFound
+		);
+		
+reg [3:0] current_state, next_state;
+
+localparam		TOPANDBOTTOMFOUND = 4'd0,
+			LoadIn = 4'd1,
+			INCREMENT_X = 4'd2,
+			INCREMENT_Y = 4'd3,
+			LEFTFOUND = 4'd4;
+
+always@(*)
+begin: state_table
+			
+	case(current_state)
+		TOPANDBOTTOMFOUND: next_state = LoadIn;
+		LoadIn: next_state = INCREMENT_X;
+		INCREMENT_X: next_state = leftEdgeReached ? INCREMENT_Y : INCREMENT_X; // begin search for most bottom
+		INCREMENT_Y: next_state = doneL ? LEFTFOUND : INCREMENT_Y;
+		LEFTFOUND: next_state = LEFTFOUND;
+		default: next_state = TOPANDBOTTOMFOUND;
+	
+	endcase
+
+end
+
+
+//output logic/datapath control
+always@(*)
+begin: enable_signals
+	ld_x = 1'b0;
+	ld_y = 1'b0;
+	countXEn = 1'b0;
+	countYEn = 1'b0;
+	resetn = 1'b1;
+	leftFound =1'b0;
+	
+	case(current_state)
+		TOPANDBOTTOMFOUND: begin
+			resetn = 1'b0; // can i use this as a reset?
+		end
+		LoadIn: begin
+			ld_x = 1'b1;
+			ld_y = 1'b1;
+		end
+		INCREMENT_X: begin
+			countXEn = 1'b1;
+		end
+		INCREMENT_Y: begin
+			countYEn = 1'b1;
+			ld_x = 1; // essentially reset x
+		end
+		LEFTFOUND: begin
+			leftFound = 1'b1;
+		end
+	
+	endcase
+
+end
+
+//current state registers
+always@(posedge clk) begin
+	if(TopandBottomFound)
+		current_state <= TOPANDBOTTOMFOUND;
+	else
+		current_state <= next_state;
+end
+
+endmodule
+
+
 
