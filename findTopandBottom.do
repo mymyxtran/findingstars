@@ -11,7 +11,7 @@ log -r {/*}
 add wave {/*}
 
 force {clk} 0 0ns, 1 {10ns} -r 20ns
-force {starFoundn} 0 0ns, 1 {12 ns}
+force {starFoundn} 1 0ns, 0 {12 ns}
 
 force {xIn} 011
 force {yIn} 010
