@@ -8,6 +8,7 @@ module test(
 	wire resetn, ld_x, ld_y; // wires used by all modules
 	
 	wire  R_countXEn, R_countYEn, rightEdgeReached, doneR;  // wires used by the find_Right
+	
 	find_Right r1(		//inputs
 				.ld_x(ld_x), 
 				.ld_y(ld_y), 
@@ -269,8 +270,6 @@ module address_translator(x, y, mem_address);
 	
 
 endmodule
-
-
 
 module find_Left(
 		ld_x, ld_y, 
