@@ -1,5 +1,5 @@
 module test(
-	input clk, TopandBottomFound, input [2:0]mostTop, input [2:0]mostBottom, input [2:0] midPix, output [2:0] mostRight, output [2:0] mostLeft);				
+	input clk, TopandBottomFound, input [2:0]mostTop, input [2:0]mostBottom, input [2:0] midPix, output [2:0] mostRight, output [2:0] mostLeft, output rightFound);				
 				
 				wire resetn, countXEn, countYEn, ld_x, ld_y, rightEdgeReached, bottomEdgeReached;	
 	find_Right r1(		//inputs
@@ -30,7 +30,8 @@ module test(
 				.ld_y(ld_y),
 				.countXEn(countXEn),
 				.countYEn(countYEn),
-				.resetn(resetn)
+				.resetn(resetn),
+				.rightFound(rightFound)
 			);
 
 endmodule
@@ -62,7 +63,8 @@ module find_Right(
 	// Enable signals
 	input countXEn; // used to enable the right x counter 
 	input countYEn; //enable for counter y
-	input pLoad; 
+	input ld_x; 
+	input ld_y;
 
 	// get input values from the findTopandBottom module
 	input [ySz-1:0] mostBottom; 
@@ -71,8 +73,8 @@ module find_Right(
 
 	// output signals for control
 	output rightEdgeReached;
-	output rightFound;
-	output [ySz-1:0] mostRight;
+	output bottomEdgeReached;
+	output reg [ySz-1:0] mostRight;
 	
 	reg[xSz-1:0] xCount;//output wires for counters
 	reg[ySz-1:0] yCount;
@@ -117,10 +119,10 @@ module find_Right(
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
 	assign rightEdgeReached = (pixVal == THRESHOLD); // 
 	
-	always@(*) begin
+	always@(posedge clk) begin
 		if(rightEdgeReached) begin // if an edge is reached, check its value is larger than the current mostRight
 			if(mostRight < xCount) begin // if most right  is less than the current xvalue, change it!
-				mostRight = xCount
+				mostRight <= xCount;
 			end
 		end
 	end
@@ -137,6 +139,7 @@ module controlRight(
 		countXEn,
 		countYEn,
 		resetn,
+		rightFound
 		);
 		
 reg [3:0] current_state, next_state;
@@ -174,7 +177,7 @@ begin: enable_signals
 	rightFound =1'b0;
 	
 	case(current_state)
-		TOPANDBOTTOM: begin
+		TOPANDBOTTOMFOUND: begin
 			resetn = 1'b0; // can i use this as a reset?
 		end
 		LoadIn: begin
@@ -226,3 +229,4 @@ module address_translator(x, y, mem_address);
 	
 
 endmodule
+
