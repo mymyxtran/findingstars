@@ -1,5 +1,6 @@
+// I realised that to start this module, we need the starFound signal to be high THEN low.... because right now, I am driving the signal high then low
 module test(
-				input clk, starFoundn, input [2:0]xIn,
+				input clk, starFound, input [2:0]xIn,
 				input [2:0] yIn);
 				
 				
@@ -28,7 +29,7 @@ module test(
 										.rightEdgeReached(rightEdgeReached),
 										.bottomEdgeReached(bottomEdgeReached), 
 										.clk(clk),
-										.starFoundn(starFoundn),
+										.starFound(starFound),
 										
 										//outputs
 										.pLoad(pLoad), 
@@ -144,7 +145,7 @@ endmodule
 
 module controlTopandBottom(
 		input rightEdgeReached,
-		bottomEdgeReached, clk, starFoundn,
+		bottomEdgeReached, clk, starFound,
 		output reg pLoad, 
 		countXEn,
 		countYEn,
@@ -210,7 +211,7 @@ end
 
 //current state registers
 always@(posedge clk) begin
-	if(!starFoundn)
+	if(starFound)
 		current_state <= STARFOUND;
 	else
 		current_state <= next_state;
