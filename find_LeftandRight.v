@@ -1,9 +1,10 @@
+// I realised that to start this module, we need the starFound signal to be high THEN low.... because right now, I am driving the signal high then low
 module test(
-				input clk, TopandBottomFound, input [2:0]xIn,
+				input clk, starFound, input [2:0]xIn,
 				input [2:0] yIn);
 				
 				
-				wire resetn, countXEn, countYEn, pLoad, mostBottom, mostTop, rightEdgeReached, bottomEdgeReached, complete; 
+				wire resetn, countXEn, countYEn, pLoad, mostBottom, mostTop, rightEdgeReached, bottomEdgeReached, TopandBottomFound; 
 				wire [2:0]midPix;
 
 				
@@ -28,14 +29,14 @@ module test(
 										.rightEdgeReached(rightEdgeReached),
 										.bottomEdgeReached(bottomEdgeReached), 
 										.clk(clk),
-										.starFoundn(starFoundn),
+										.starFound(starFound),
 										
 										//outputs
 										.pLoad(pLoad), 
 										.countXEn(countXEn),
 										.countYEn(countYEn),
 										.resetn(resetn), // used to reset counters in data path
-										.Top(complete)); 
+										.TopandBottomFound(TopandBottomFound)); 
 									
 
 endmodule
@@ -47,7 +48,7 @@ module findTopandBottom(
 		countXEn, 
 		countYEn, 
 		clk, 
-		resetn,  
+		resetn, // need diff reset signal
 		mostBottom,
 		mostTop,
 		midPix,
@@ -144,12 +145,12 @@ endmodule
 
 module controlTopandBottom(
 		input rightEdgeReached,
-		bottomEdgeReached, clk, starFoundn,
+		bottomEdgeReached, clk, starFound,
 		output reg pLoad, 
 		countXEn,
 		countYEn,
 		resetn,
-		complete);
+		TopandBottomFound);
 		
 		
 reg [3:0] current_state, next_state;
@@ -160,15 +161,18 @@ localparam	STARFOUND = 4'd0,
 			INCREMENT_Y = 4'd3,
 			DONESEARCH = 4'd4;
 
-always@(posedge clk)
+always@(*)
 begin: state_table
 			
 	case(current_state)
-		STARFOUND: next_state <= LoadIn;
-		LoadIn: next_state <= INCREMENT_X;
-		INCREMENT_X: next_state <= rightEdgeReached ? INCREMENT_Y : INCREMENT_X; // begin search for most bottom
-		INCREMENT_Y: next_state <= bottomEdgeReached ? DONESEARCH : INCREMENT_Y;
-		default: next_state <= STARFOUND;
+		STARFOUND: next_state = LoadIn;
+		LoadIn: next_state = INCREMENT_X;
+		
+		INCREMENT_X: next_state = rightEdgeReached ? INCREMENT_Y : INCREMENT_X; // begin search for most bottom
+		
+		INCREMENT_Y: next_state = bottomEdgeReached ? DONESEARCH : INCREMENT_Y;
+		DONESEARCH: next_state = DONESEARCH;
+		default: next_state = STARFOUND;
 	
 	endcase
 
@@ -176,29 +180,29 @@ end
 
 
 //output logic/datapath control
-always@(posedge clk)
+always@(*)
 begin: enable_signals
-	pLoad <= 1'b0;
-	countXEn <= 1'b0;
-	countYEn <= 1'b0;
-	resetn <= 1'b1;
-	complete <=1'b0;
+	pLoad = 1'b0;
+	countXEn = 1'b0;
+	countYEn = 1'b0;
+	resetn = 1'b1;
+	TopandBottomFound =1'b0;
 	
 	case(current_state)
 		STARFOUND: begin
-			resetn <= 1'b0; // can i use this as a reset?
+			resetn = 1'b0; // can i use this as a reset?
 		end
 		LoadIn: begin
-			pLoad <= 1'b1;
+			pLoad = 1'b1;
 		end
 		INCREMENT_X: begin
-			countXEn <= 1'b1;
+			countXEn = 1'b1;
 		end
 		INCREMENT_Y: begin
-			countYEn <= 1'b1;
+			countYEn = 1'b1;
 		end
 		DONESEARCH: begin
-			complete <= 1'b1;
+			TopandBottomFound = 1'b1;
 		end
 	
 	endcase
@@ -207,9 +211,9 @@ end
 
 //current state registers
 always@(posedge clk) begin
-	if(!starFoundn)
+	if(starFound)
 		current_state <= STARFOUND;
-
+	else
 		current_state <= next_state;
 end
 
