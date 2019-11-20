@@ -1,7 +1,7 @@
 // I realised that to start this module, we need the starFound signal to be high THEN low.... because right now, I am driving the signal high then low
 module test(
 				input clk, starFound, input [2:0]xIn,
-				input [2:0] yIn, output [2:0] mostBottom, [2:0] mostTop);
+	input [2:0] yIn, output [2:0] mostBottom, output [2:0] mostTop);
 				
 				
 				wire resetn, countXEn, countYEn, pLoad, rightEdgeReached, bottomEdgeReached, TopandBottomFound; 
@@ -60,6 +60,10 @@ module findTopandBottom(
 	parameter ySz = 3;
 	parameter addrSz = 6;
 	parameter colSz = 3;
+
+	// Size of image 
+	parameter y_resolution = 4'd6;
+	parameter x_resolution = 4'd6;
 
 	//set the threshold for pixel value
 	localparam THRESHOLD = 0;
@@ -129,11 +133,11 @@ module findTopandBottom(
 	//instantiate mem block
 	ram36x3_1 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
 
-	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
-	assign rightEdgeReached = (pixVal == THRESHOLD); // This signal indicates when to start mostBottom traversal.
+	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	. // Edge-case, the end (right-end) of the screen is reached
+	assign rightEdgeReached = (pixVal == THRESHOLD) || (xCount == x_resolution); // This signal indicates when to start mostBottom traversal. 
 	
 	// This signal stop datapath, since all calculations are complete.
-	assign bottomEdgeReached = (pixVal == THRESHOLD) && (countYEn == 1'd1);
+	assign bottomEdgeReached = ((pixVal == THRESHOLD) && (countYEn == 1'd1)) || (mostBottom == y_resolution); // Edge-case, the end (bottom) of the screen is reached. 
 
 	// Once bottomEdge is found, mostBottom will have the highest yvalue coordinate stored, yCount.
 	assign mostBottom = yCount;
@@ -239,6 +243,5 @@ module address_translator(x, y, mem_address);
 	
 
 endmodule
-
 
 
