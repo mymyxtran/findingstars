@@ -8,20 +8,20 @@ module test(
 	input clk, TopandBottomFound, input [2:0]mostTop, input [2:0]mostBottom, input [2:0] midPix, 
 	output [2:0] mostRight, output [2:0] mostLeft, output rightFound, output leftFound);				
 				
-	wire resetn, ld_x, ld_y; // wires used by all modules
+
 	
-	wire  R_countXEn, R_countYEn, rightEdgeReached, doneR;  // wires used by the find_Right
+	wire  R_ld_x, R_ld_y, resetnR, R_countXEn, R_countYEn, rightEdgeReached, doneR;  // wires used by the find_Right
 	
 	find_Right r1(		//inputs
-				.ld_x(ld_x), 
-				.ld_y(ld_y), 
+				.ld_x(R_ld_x), 
+				.ld_y(R_ld_y), 
 				.midPix(midPix), 
 				.mostBottom(mostBottom),
 				.mostTop(mostTop),
 				.countXEn(R_countXEn), 
 				.countYEn(R_countYEn), 
 				.clk(clk), 
-				.resetn(resetn), 
+				.resetn(resetnR), 
 		
 				// outputs
 				.doneR(doneR),
@@ -36,45 +36,45 @@ module test(
 				.TopandBottomFound(TopandBottomFound),
 		
 				// outputs
-				.ld_x(ld_x), 
-				.ld_y(ld_y),
+				.ld_x(R_ld_x), 
+				.ld_y(R_ld_y),
 				.countXEn(R_countXEn),
 				.countYEn(R_countYEn),
-				.resetn(resetn),
+				.resetn(resetnR),
 				.rightFound(rightFound)
 			);
 	
-	wire L_countXEn, L_countYEn, leftEdgeReached, doneL;	// wires used by the find_Left
+	wire L_ld_x, L_ld_y, L_countXEn, L_countYEn, leftEdgeReached, doneL, resetnL;	// wires used by the find_Left
 	
 	find_Left l1(		//inputs
-				.ld_x(ld_x), 
-				.ld_y(ld_y), 
+				.ld_x(L_ld_x), 
+				.ld_y(L_ld_y), 
 				.midPix(midPix), 
 				.mostBottom(mostBottom),
 				.mostTop(mostTop),
 				.countXEn(L_countXEn), 
 				.countYEn(L_countYEn), 
 				.clk(clk), 
-				.resetn(resetn), 
+				.resetn(resetnL), 
 		
 				// outputs
 				.doneL(doneL),
 				.leftEdgeReached(leftEdgeReached), 
-				.mostRight(mostRight)
+				.mostLeft(mostLeft)
 			); 
 	
 	control_Left cL(	// inputs
 				.leftEdgeReached(leftEdgeReached),
-				.doneR(doneR), 
+				.doneL(doneL), 
 				.clk(clk), 
 				.TopandBottomFound(TopandBottomFound),
 		
 				// outputs
-				.ld_x(ld_x), 
-				.ld_y(ld_y),
+				.ld_x(L_ld_x), 
+				.ld_y(L_ld_y),
 				.countXEn(L_countXEn),
 				.countYEn(L_countYEn),
-				.resetn(resetn),
+				.resetn(resetnL),
 				.leftFound(leftFound)
 			);
 
@@ -126,6 +126,7 @@ module find_Right(
 	wire[addrSz-1:0] addressOut;//address wire from translator
 
 	wire[colSz-1:0] pixVal; 
+	wire update_mostRight;
 	
 	//instantiate the x counter
 	always@(posedge clk) begin
@@ -163,13 +164,21 @@ module find_Right(
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
 	assign rightEdgeReached = (pixVal == THRESHOLD); // 
 	
+	assign update_mostRight = (mostRight < xCount);
+	
 	always@(posedge clk) begin
-		if(rightEdgeReached) begin // if an edge is reached, check its value is larger than the current mostRight
-			if(mostRight < xCount) begin // if most right  is less than the current xvalue, change it!
+	 // if an edge is reached, check its value is larger than the current mostRight
+			if(!resetn)
+				mostRight <= midPix;
+			else if(update_mostRight) begin // if most right  is less than the current xvalue, change it!
 				mostRight <= xCount;
 			end
-		end
+			else begin
+				mostRight <=mostRight;
+			end
+	  
 	end
+
 	
 	// This signal stop datapath, since all calculations are complete.
 	assign doneR = (yCount == mostBottom); 
@@ -320,6 +329,7 @@ module find_Left(
 	wire[addrSz-1:0] addressOut;//address wire from translator
 
 	wire[colSz-1:0] pixVal; 
+	wire update_mostLeft;
 	
 	//instantiate the x counter
 	always@(posedge clk) begin
@@ -357,11 +367,14 @@ module find_Left(
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
 	assign leftEdgeReached = (pixVal == THRESHOLD); // 
 	
+	assign update_mostLeft = (mostLeft > xCount); // if most right  is less than the current xvalue, change it!
+	
 	always@(posedge clk) begin
-		if(leftEdgeReached) begin // if an edge is reached, check its value is larger than the current mostRight
-			if(mostLeft > xCount) begin // if most right  is less than the current xvalue, change it!
+		if(!resetn) begin
+				mostLeft <= midPix;
+		end
+		else if(update_mostLeft) begin 
 				mostLeft <= xCount;
-			end
 		end
 	end
 	
