@@ -99,6 +99,9 @@ module find_Right(
 	parameter addrSz = 6;
 	parameter colSz = 3;
 
+	// Size of Image 
+	parameter x_resolution = 4'd6;
+
 	//set the threshold for pixel value
 	localparam THRESHOLD = 0;
 
@@ -162,7 +165,7 @@ module find_Right(
 	ram36x3_1 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
 
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
-	assign rightEdgeReached = (pixVal == THRESHOLD); // 
+	assign rightEdgeReached = (pixVal == THRESHOLD) || (mostRight == x_resolution); // 
 	
 	assign update_mostRight = (mostRight < xCount);
 	
@@ -181,7 +184,7 @@ module find_Right(
 
 	
 	// This signal stop datapath, since all calculations are complete.
-	assign doneR = (yCount == mostBottom); 
+	assign doneR = (yCount == mostBottom) || (mostRight == x_resolution); 
 
 endmodule 
 
@@ -362,10 +365,10 @@ module find_Left(
 	address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
 
 	//instantiate mem block
-	ram36x3_1 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
+	ram36x3_1 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); 
 
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
-	assign leftEdgeReached = (pixVal == THRESHOLD); // 
+	assign leftEdgeReached = (pixVal == THRESHOLD) || (mostLeft == 1'b0); // Edge-case left end of screen is reached
 	
 	assign update_mostLeft = (mostLeft > xCount); // if most right  is less than the current xvalue, change it!
 	
@@ -379,7 +382,7 @@ module find_Left(
 	end
 	
 	// This signal stop datapath, since all calculations are complete.
-	assign doneL = (yCount == mostBottom); 
+	assign doneL = (yCount == mostBottom) || (mostLeft == 1'b0); 
 
 endmodule 
 
@@ -459,6 +462,3 @@ always@(posedge clk) begin
 end
 
 endmodule
-
-
-
