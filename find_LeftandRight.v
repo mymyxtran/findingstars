@@ -144,14 +144,18 @@ module find_Right(
 	always@(posedge clk) begin
 	
 		if(!resetn) begin
-			xCount <= midPix; 
+			xCount <= midPix;
 		end
-		else if(ld_x) begin // After rightEdge is met and you move down one row, load in the midpix value.
+		else if(ld_x) begin // After TopandBottom is found or when you move down one row, load in the midpix value.
 			xCount <= midPix;	
+		end
+		else if(countXEn == 1'b1 && rightEdgeReached ==1'b1 ) begin
+			xCount <= xCount;
 		end
 		else if(countXEn) begin
 			xCount <= xCount + 1'd1; // traverse right until the mostRightEdge		
 		end
+		
 	end
 		
 	//instantiate the y counter
@@ -342,6 +346,9 @@ module find_Left(
 		else if(ld_x) begin // After TopandBottom is found or when you move down one row, load in the midpix value.
 			xCount <= midPix;	
 		end
+		else if(countXEn == 1'b1 && leftEdgeReached ==1'b1 ) begin
+			xCount <= xCount;
+		end
 		else if(countXEn) begin
 			xCount <= xCount - 1'd1; // traverse right until the mostRightEdge		
 		end
@@ -492,5 +499,5 @@ module address_translator(x, y, mem_address);
 	 //so address = (y*32) + (y*16)  + (y*8)+ (y*4)+ x
 	 assign mem_address = ({1'b0, y, 5'd0} + {1'b0, y, 4'd0} +{1'b0, y, 3'd0} + {1'b0, y, 2'd0} + {1'b0,x});
 	
-
 endmodule
+
