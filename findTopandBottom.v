@@ -53,7 +53,7 @@ module findTopandBottom(
 		mostTop,
 		midPix,
 		rightEdgeReached,
-		bottomEdgeReached,
+		bottomEdgeReached
 		);  
 
 	parameter xSz = 3;
