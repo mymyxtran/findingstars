@@ -4,11 +4,20 @@
 
 /* Note: The TopandBottomFound signal needs to go high then low, to start the fsm initally... So that it knows what state to be in first.
  *       Or is this unnecessary? */
-module test(
-	input clk, TopandBottomFound, input [2:0]mostTop, input [2:0]mostBottom, input [2:0] midPix, 
-	output [2:0] mostRight, output [2:0] mostLeft, output rightFound, output leftFound);				
-				
-
+module test(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostRight,  mostLeft,  rightFound, leftFound);
+	
+	parameter xSz = 6;
+	parameter ySz = 6;
+	
+	input clk, TopandBottomFound;
+	input [ySz-1:0]mostTop;
+	input [ySz-1:0]mostBottom;
+	input [xSz-1:0] midPix; // must be 1 larger 
+	output [xSz-1:0] mostRight;
+	output [xSz-1:0] mostLeft;
+	output rightFound;
+	output leftFound;		
+					
 	
 	wire  R_ld_x, R_ld_y, resetnR, R_countXEn, R_countYEn, rightEdgeReached, doneR;  // wires used by the find_Right
 	
@@ -94,13 +103,13 @@ module find_Right(
 		mostRight
 		);  
 
-	parameter xSz = 3;
-	parameter ySz = 3;
-	parameter addrSz = 6;
+	parameter xSz = 6;
+	parameter ySz = 6;
+	parameter addrSz = 12;
 	parameter colSz = 3;
 
 	// Size of Image 
-	parameter x_resolution = 4'd6;
+	parameter x_resolution = 6'd60;
 
 	//set the threshold for pixel value
 	localparam THRESHOLD = 0;
@@ -135,7 +144,7 @@ module find_Right(
 	always@(posedge clk) begin
 	
 		if(!resetn) begin
-			xCount <= 0;
+			xCount <= midPix;
 		end
 		else if(ld_x) begin // After TopandBottom is found or when you move down one row, load in the midpix value.
 			xCount <= midPix;	
@@ -148,7 +157,7 @@ module find_Right(
 	//instantiate the y counter
 	always@(posedge clk) begin
 		if(!resetn)
-			yCount <= 0;
+			yCount <= mostTop;
 		else if(ld_y) begin // Initially, when find_LeftandRight begin load in the mosttop value.
 			yCount <= mostTop; // start at the most top of the shape
 		end
@@ -162,7 +171,7 @@ module find_Right(
 	address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
 
 	//instantiate mem block
-	ram36x3_1 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
+	ram3600x3_sq ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
 
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
 	assign rightEdgeReached = (pixVal == THRESHOLD) || (mostRight == x_resolution); // 
@@ -203,8 +212,10 @@ reg [3:0] current_state, next_state;
 localparam		TOPANDBOTTOMFOUND = 4'd0,
 			LoadIn = 4'd1,
 			INCREMENT_X = 4'd2,
-			INCREMENT_Y = 4'd3,
-			RIGHTFOUND = 4'd4;
+			CHECK_RIGHT = 4'd3,
+			RELOAD_MIDPIX = 4'd4,
+			INCREMENT_Y = 4'd5,
+			RIGHTFOUND = 4'd6;
 
 always@(*)
 begin: state_table
@@ -212,8 +223,13 @@ begin: state_table
 	case(current_state)
 		TOPANDBOTTOMFOUND: next_state = LoadIn;
 		LoadIn: next_state = INCREMENT_X;
-		INCREMENT_X: next_state = rightEdgeReached ? INCREMENT_Y : INCREMENT_X; // begin search for most bottom
-		INCREMENT_Y: next_state = doneR ? RIGHTFOUND : INCREMENT_Y;
+		INCREMENT_X: next_state = CHECK_RIGHT;
+		
+		// nothing changes in this state.
+		CHECK_RIGHT: next_state = rightEdgeReached ? RELOAD_MIDPIX : INCREMENT_X; // begin search for most bottom
+		
+		RELOAD_MIDPIX: next_state = INCREMENT_Y;
+		INCREMENT_Y: next_state = doneR ? RIGHTFOUND : INCREMENT_X;
 		RIGHTFOUND: next_state = RIGHTFOUND;
 		default: next_state = TOPANDBOTTOMFOUND;
 	
@@ -243,9 +259,11 @@ begin: enable_signals
 		INCREMENT_X: begin
 			countXEn = 1'b1;
 		end
+		RELOAD_MIDPIX: begin
+			ld_x = 1'b1; // essentially reset x
+		end
 		INCREMENT_Y: begin
 			countYEn = 1'b1;
-			ld_x = 1; // essentially reset x
 		end
 		RIGHTFOUND: begin
 			rightFound = 1'b1;
@@ -265,26 +283,7 @@ end
 
 endmodule
 
-module address_translator(x, y, mem_address);
 
-	input [2:0] x; 
-	input [2:0] y;	
-	output [5:0] mem_address;
-	
-	/* The basic formula is address = y*WIDTH + x;
-	 * For 320x240 resolution we can write 320 as (256 + 64). Memory address becomes
-	 * (y*256) + (y*64) + x;
-	 * This simplifies multiplication a simple shift and add operation.
-	 * A leading 0 bit is added to each operand to ensure that they are treated as unsigned
-	 * inputs. By default the use a '+' operator will generate a signed adder.
-	 * Similarly, for 160x120 resolution we write 160 as 128+32.
-	 */
-	 //width = 6 = 4 + 2
-	 //so address = (y*4) + (y*2) + x
-	 assign mem_address = ({1'b0, y, 2'd0} + {1'b0, y, 1'd0} + {1'b0, x});
-	
-
-endmodule
 
 module find_Left(
 		ld_x, ld_y, 
@@ -300,9 +299,9 @@ module find_Left(
 		mostLeft
 		);  
 
-	parameter xSz = 3;
-	parameter ySz = 3;
-	parameter addrSz = 6;
+	parameter xSz = 6;
+	parameter ySz = 6;
+	parameter addrSz = 12;
 	parameter colSz = 3;
 
 	//set the threshold for pixel value
@@ -338,7 +337,7 @@ module find_Left(
 	always@(posedge clk) begin
 	
 		if(!resetn) begin
-			xCount <= 0;
+			xCount <= midPix;
 		end
 		else if(ld_x) begin // After TopandBottom is found or when you move down one row, load in the midpix value.
 			xCount <= midPix;	
@@ -351,7 +350,7 @@ module find_Left(
 	//instantiate the y counter
 	always@(posedge clk) begin
 		if(!resetn)
-			yCount <= 0;
+			yCount <= mostTop;
 		else if(ld_y) begin // Initially, when find_LeftandRight begin load in the mosttop value.
 			yCount <= mostTop; // start at the most top of the shape
 		end
@@ -365,7 +364,7 @@ module find_Left(
 	address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
 
 	//instantiate mem block
-	ram36x3_1 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); 
+	ram3600x3_sq ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); 
 
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
 	assign leftEdgeReached = (pixVal == THRESHOLD) || (mostLeft == 1'b0); // Edge-case left end of screen is reached
@@ -401,8 +400,10 @@ reg [3:0] current_state, next_state;
 localparam		TOPANDBOTTOMFOUND = 4'd0,
 			LoadIn = 4'd1,
 			INCREMENT_X = 4'd2,
-			INCREMENT_Y = 4'd3,
-			LEFTFOUND = 4'd4;
+			CHECK_LEFT = 4'd3,
+			RELOAD_MIDPIX =4'd4,
+			INCREMENT_Y = 4'd5,
+			LEFTFOUND = 4'd6;
 
 always@(*)
 begin: state_table
@@ -410,8 +411,14 @@ begin: state_table
 	case(current_state)
 		TOPANDBOTTOMFOUND: next_state = LoadIn;
 		LoadIn: next_state = INCREMENT_X;
-		INCREMENT_X: next_state = leftEdgeReached ? INCREMENT_Y : INCREMENT_X; // begin search for most bottom
-		INCREMENT_Y: next_state = doneL ? LEFTFOUND : INCREMENT_Y;
+		INCREMENT_X: next_state = CHECK_LEFT; // begin search for most bottom
+		
+		//nothing happens. here we look at the value of left edge. Need this state 
+		CHECK_LEFT: next_state = leftEdgeReached ? RELOAD_MIDPIX : INCREMENT_X; // begin search for most bottom
+		
+		// This state reloads the midPix. Need this because loading is done after one state.
+		RELOAD_MIDPIX: next_state = INCREMENT_Y;
+		INCREMENT_Y: next_state = doneL ? LEFTFOUND : INCREMENT_X;
 		LEFTFOUND: next_state = LEFTFOUND;
 		default: next_state = TOPANDBOTTOMFOUND;
 	
@@ -441,9 +448,11 @@ begin: enable_signals
 		INCREMENT_X: begin
 			countXEn = 1'b1;
 		end
+		RELOAD_MIDPIX: begin
+			ld_x = 1; // essentially reset x
+		end
 		INCREMENT_Y: begin
 			countYEn = 1'b1;
-			ld_x = 1; // essentially reset x
 		end
 		LEFTFOUND: begin
 			leftFound = 1'b1;
@@ -460,5 +469,28 @@ always@(posedge clk) begin
 	else
 		current_state <= next_state;
 end
+
+endmodule
+
+
+module address_translator(x, y, mem_address);
+	
+	// 60 x 60
+	input [5:0] x; 
+	input [5:0] y;	
+	output [11:0] mem_address;
+	
+	/* The basic formula is address = y*WIDTH + x;
+	 * For 320x240 resolution we can write 320 as (256 + 64). Memory address becomes
+	 * (y*256) + (y*64) + x;
+	 * This simplifies multiplication a simple shift and add operation.
+	 * A leading 0 bit is added to each operand to ensure that they are treated as unsigned
+	 * inputs. By default the use a '+' operator will generate a signed adder.
+	 * Similarly, for 160x120 resolution we write 160 as 128+32.
+	 */
+	 //width = 60 = 32 + 16 + 8 + 4
+	 //so address = (y*32) + (y*16)  + (y*8)+ (y*4)+ x
+	 assign mem_address = ({1'b0, y, 5'd0} + {1'b0, y, 4'd0} +{1'b0, y, 3'd0} + {1'b0, y, 2'd0} + {1'b0,x});
+	
 
 endmodule
