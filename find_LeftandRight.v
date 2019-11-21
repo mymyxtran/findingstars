@@ -144,9 +144,9 @@ module find_Right(
 	always@(posedge clk) begin
 	
 		if(!resetn) begin
-			xCount <= midPix;
+			xCount <= midPix; 
 		end
-		else if(ld_x) begin // After TopandBottom is found or when you move down one row, load in the midpix value.
+		else if(ld_x) begin // After rightEdge is met and you move down one row, load in the midpix value.
 			xCount <= midPix;	
 		end
 		else if(countXEn) begin
