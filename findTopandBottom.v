@@ -1,4 +1,4 @@
-module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound);
+module mapTopandBottomFound( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound);
 				
 	parameter xSz = 6;
 	parameter ySz = 6;
@@ -165,9 +165,10 @@ module controlTopandBottom(
 		output reg pLoad, 
 		countXEn,
 		countYEn,
-		resetn,
+		resetn, output
 		TopandBottomFound);
 		
+reg TopandBottomFound_s;		
 reg TopandBottomFound_DL;
 	
 reg [3:0] current_state, next_state;
@@ -236,14 +237,14 @@ always@(posedge clk) begin
 		current_state <= next_state;
 end
 	
-assign TopandBottomFound = (!TopandBottomDelay_DL) && (TopandBottomFound_s);
+assign TopandBottomFound = (!TopandBottomFound_DL) && (TopandBottomFound_s);
 
 always@(posedge clk) begin
 	if(TopandBottomFound_s) begin
-		TopandBottomDelay_DL <= 1'b1;
+		TopandBottomFound_DL <= 1'b1;
 	end
 	else begin
-		TopandBottomDelay_DL <= 1'b0;
+		TopandBottomFound_DL <= 1'b0;
 	end
 end
 
