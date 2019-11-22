@@ -15,8 +15,7 @@ module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBot
 	wire [xSz-1:0]midPix;
 	wire [2:0] pixVal;
 	wire [11:0] addressOut;
-
-				
+		
 	findTopandBottom u1(	 	//inputs
 									.clk(clk), 
 									.resetn(resetn),
