@@ -12,8 +12,6 @@ module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBot
 		
 	wire resetn, countXEn, countYEn, pLoad, rightEdgeReached, bottomEdgeReached; 
 	wire [xSz-1:0]midPix;
-	wire [2:0] pixVal;
-	wire [11:0] addressOut;
 		
 	findTopandBottom u1(	 	//inputs
 									.clk(clk), 
@@ -29,8 +27,8 @@ module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBot
 									.mostTop(mostTop), 
 									.midPix(midPix),
 									.rightEdgeReached(rightEdgeReached),
-									.bottomEdgeReached(bottomEdgeReached),
-									.p(pixVal), .a(addressOut)); 	
+									.bottomEdgeReached(bottomEdgeReached)
+									); 	
 								
 	controlTopandBottom u5( 	
 										//inputs
@@ -61,7 +59,7 @@ module findTopandBottom(
 		mostTop,
 		midPix,
 		rightEdgeReached,
-		bottomEdgeReached, p, a
+		bottomEdgeReached
 		);  
 
 	parameter xSz = 6;
@@ -159,11 +157,6 @@ module findTopandBottom(
 	// Output this for easier input into next fsm.
 	assign mostTop = yOriginal;
 	
-	output [2:0] p;
-	output [11:0] a;
-	assign a = addressOut;
-		assign p = pixVal_1;
-
 endmodule 
 
 module controlTopandBottom(
@@ -175,7 +168,8 @@ module controlTopandBottom(
 		resetn,
 		TopandBottomFound);
 		
-		
+reg TopandBottomFound_DL;
+	
 reg [3:0] current_state, next_state;
 
 localparam	STARFOUND = 4'd0,
@@ -211,7 +205,7 @@ begin: enable_signals
 	countXEn = 1'b0;
 	countYEn = 1'b0;
 	resetn = 1'b1;
-	TopandBottomFound =1'b0;
+	TopandBottomFound_s =1'b0;
 	
 	case(current_state)
 		STARFOUND: begin
@@ -227,7 +221,7 @@ begin: enable_signals
 			countYEn = 1'b1;
 		end
 		DONESEARCH: begin
-			TopandBottomFound = 1'b1;
+			TopandBottomFound_s = 1'b1;
 		end
 	
 	endcase
@@ -240,6 +234,17 @@ always@(posedge clk) begin
 		current_state <= STARFOUND;
 	else
 		current_state <= next_state;
+end
+	
+assign TopandBottomFound = (!TopandBottomDelay_DL) && (TopandBottomFound_s);
+
+always@(posedge clk) begin
+	if(TopandBottomFound_s) begin
+		TopandBottomDelay_DL <= 1'b1;
+	end
+	else begin
+		TopandBottomDelay_DL <= 1'b0;
+	end
 end
 
 endmodule
