@@ -1,5 +1,4 @@
-// I realised that to start this module, we need the starFound signal to be high THEN low.... because right now, I am driving the signal high then low
-module test( clk, starFound, xIn, yIn, mostBottom, mostTop);
+module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop);
 				
 	parameter xSz = 6;
 	parameter ySz = 6;
