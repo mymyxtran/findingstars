@@ -211,9 +211,10 @@ module control_Right(
 		countXEn,
 		countYEn,
 		resetn,
-		rightFound
+		output rightFound
 		);
-		
+
+reg rightFound_DL, rightFound_s;	
 reg [3:0] current_state, next_state;
 
 localparam		TOPANDBOTTOMFOUND = 4'd0,
@@ -252,7 +253,7 @@ begin: enable_signals
 	countXEn = 1'b0;
 	countYEn = 1'b0;
 	resetn = 1'b1;
-	rightFound =1'b0;
+	rightFound_s =1'b0;
 	
 	case(current_state)
 		TOPANDBOTTOMFOUND: begin
@@ -272,7 +273,7 @@ begin: enable_signals
 			countYEn = 1'b1;
 		end
 		RIGHTFOUND: begin
-			rightFound = 1'b1;
+			rightFound_s = 1'b1;
 		end
 	
 	endcase
@@ -286,7 +287,18 @@ always@(posedge clk) begin
 	else
 		current_state <= next_state;
 end
+	
+assign rightFound = (!rightFound_DL) && (rightFound_s);
 
+always@(posedge clk) begin
+	if(rightFound_s) begin
+		rightFound_DL <= 1'b1;
+	end
+	else begin
+		rightFound_DL <= 1'b0;
+	end
+end
+	
 endmodule
 
 
