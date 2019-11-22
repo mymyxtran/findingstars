@@ -2,7 +2,7 @@
 
 vlib work
 
-vlog find_stars.v ram36x3_1.v
+vlog master.v ram36x3_1.v
 
 vsim -L altera_mf_ver -L altera_mf  findWhite 
 
@@ -13,7 +13,10 @@ add wave {/*}
 force {clk} 0 0ns, 1 {10ns} -r 20ns
 force {resetn} 0 0ns, 1 {12 ns}
 force {doneDraw} 0
-force {doneStarMap} 0
+force {doneClean} 0
+force {topBottomFound} 0
+force {leftFound} 0
+force {rightFound} 0
 
 run 2000 ns
 
