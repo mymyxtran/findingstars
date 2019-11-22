@@ -86,6 +86,8 @@ module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, newRow, clk, resetn, wrE
 		input[xSz-1:0] xIn;
 		input[ySz-1:0] yIn;
 		
+		wire starFound_s;
+		reg starFound_DL;
 		output starFound;//1 if star is found, 0 if not
 		output endOfImg;//have all pixels been visited?
 		
@@ -146,7 +148,18 @@ module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, newRow, clk, resetn, wrE
 		//instantiate mem block
 		ram36x3_1 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(wrEn), .data(writeCol));
 		
-		assign starFound = (pixVal > THRESHOLD);
+		assign starFound_s = (pixVal > THRESHOLD);
+	
+		assign starFound = (!starFound_DL) && (starFound_s);
+		
+		always@(posedge clk) begin
+			if(starFound_s) begin
+				starFound_DL <= 1'b1;
+			end
+			else begin
+				starFound_DL <= 1'b0;
+			end
+		end
 
 endmodule
 
