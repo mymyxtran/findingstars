@@ -40,18 +40,21 @@ module find_stars
 endmodule
 
 //this module combines topDataPath and state_machine1
-module findWhite(input[2:0] xIn, yIn, input clk, resetn, doneDraw, doneStarMap, output goDraw, goStarMap, plotEn);
+module findWhite(input[2:0] xIn, yIn, input clk, resetn, doneDraw, doneClean, topBottomFound, leftFound, rightFound, output goDraw, goClean,
+				goMapColumns, goMapRows, plotEn);
 
 	wire pLoad, countXEn, countYEn, wrEn, starFound, endOfImg, xMax, newRow;
+	
+	assign wrEn = 1'b0;
 	
 	topDataPath topDP(.pLoad(pLoad), .xIn(xIn), .yIn(yIn), .countXEn(countXEn), .countYEn(countYEn), .newRow(newRow), 
 							.clk(clk), .resetn(resetn), .wrEn(wrEn), .starFound(starFound), .endOfImg(endOfImg), .xMax(xMax));
 							
 	
 	state_machine1 fsm1(.resetn(resetn), .clk(clk), .starFound(starFound), .endOfImg(endOfImg), .newRow(newRow),
-								.doneStarMap(doneStarMap), .xMax(xMax), .doneDraw(doneDraw), 
-								.ld_count(pLoad), .countXEn(countXEn), .countYEn(countYEn), .plotEn(plotEn), 
-								.goStarMap(goStarMap), .goDraw(goDraw), .wrEn(wrEn));
+							 .xMax(xMax), .doneDraw(doneDraw), .doneClean(doneClean), .topBottomFound(topBottomFound),
+								.leftFound(leftFound), .rightFound(rightFound), .ld_count(pLoad), .countXEn(countXEn), .countYEn(countYEn), .plotEn(plotEn), 
+								.goDraw(goDraw), .goMapRows(goMapRows), .goMapColumns(goMapColumns), .goClean(goClean));
 
 endmodule
 
@@ -86,7 +89,7 @@ module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, newRow, clk, resetn, wrE
 		output starFound;//1 if star is found, 0 if not
 		output endOfImg;//have all pixels been visited?
 		
-		output xMax; //has end of row been reached?
+		output reg xMax; //has end of row been reached?
 		
 		reg[xSz-1:0] xCount;//output wires for counters
 		reg[ySz-1:0] yCount;
@@ -105,10 +108,20 @@ module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, newRow, clk, resetn, wrE
 				xCount <= 0;
 			else if(pLoad)
 				xCount <= xIn;
-			else if(newRow == 1)//reset count to avoid accessing undefined mem
+			else if(xCount == MAX_X-1)//reset count to avoid accessing undefined mem
 				xCount <= 0;
+				yCount <= yCount + 1;
 			else if(countXEn)
 				xCount <= xCount + 1;			
+		end
+		
+		always@(posedge clk) begin
+			if(!resetn)
+				xMax <= 0;
+			else if(xCount == MAX_X-2)
+				xMax <= 1;
+			else
+				xMax <= 0;			
 		end
 		
 		//instantiate the y counter
@@ -126,8 +139,7 @@ module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, newRow, clk, resetn, wrE
 		//if counts are maxxed, set endOfImage to 1
 		assign endOfImg = (yCount == MAX_Y);
 		
-		assign xMax = (xCount == MAX_X);
-		
+				
 		//instantiate address translator
 		address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
 		
@@ -135,12 +147,11 @@ module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, newRow, clk, resetn, wrE
 		ram36x3_1 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(wrEn), .data(writeCol));
 		
 		assign starFound = (pixVal > THRESHOLD);
-		
 
 endmodule
 
-module state_machine1(input resetn, clk, starFound, endOfImg, doneStarMap, xMax, doneDraw, 
-								output reg ld_count, countXEn, countYEn, plotEn, goStarMap, goDraw, wrEn, newRow);
+module state_machine1(input resetn, clk, starFound, endOfImg, topBottomFound, leftFound, rightFound, xMax, doneDraw, doneClean,
+								output reg ld_count, countXEn, countYEn, plotEn, goMapRows, goMapColumns, goDraw, goClean, newRow);
 
 	reg [3:0] current_state, next_state; 
     
@@ -149,11 +160,12 @@ module state_machine1(input resetn, clk, starFound, endOfImg, doneStarMap, xMax,
 					 CHECK_PIX  = 4'd2,
 					 INCR_X = 4'd3,
 					 INCR_Y  = 4'd4,
-					 MAP_STAR = 4'd5,
-					 DRAW_SQ = 4'd6,
-					 LOAD_COUNT = 4'd7,
-					 END_OF_IMG = 4'd8,
-					 OVERWRITE_STAR = 4'd9;//this state would turn star bkack so we dont check it again?
+					 MAP_TOP_BOT = 4'd5,
+					 MAP_L_R = 4'd6,
+					 DRAW_SQ = 4'd7,
+					 LOAD_COUNT = 4'd8,
+					 END_OF_IMG = 4'd9,
+					 CLEAN_STAR = 4'd10;//this state would turn star bkack so we dont check it again?
 	
 	//next state logic
 	//change to sequential?
@@ -162,13 +174,19 @@ module state_machine1(input resetn, clk, starFound, endOfImg, doneStarMap, xMax,
 		case(current_state)
 			RESET: next_state = CHECK_COUNT;
 			CHECK_COUNT: next_state = (endOfImg) ? END_OF_IMG : CHECK_PIX;
-			CHECK_PIX: next_state = (starFound) ? MAP_STAR : INCR_X;
+			CHECK_PIX: next_state = (starFound) ? MAP_TOP_BOT : INCR_X;
 			INCR_X: next_state = (xMax) ? INCR_Y : CHECK_COUNT;
 			INCR_Y: next_state = CHECK_COUNT;
-			MAP_STAR: next_state = (doneStarMap) ? DRAW_SQ : MAP_STAR;
-			DRAW_SQ: next_state = (doneDraw) ? LOAD_COUNT : DRAW_SQ;
+			MAP_TOP_BOT: next_state = (topBottomFound) ? MAP_L_R : MAP_TOP_BOT;
+			MAP_L_R: next_state = (rightFound && leftFound) ? DRAW_SQ : MAP_L_R;
+			DRAW_SQ: next_state = (doneDraw) ? CLEAN_STAR : DRAW_SQ;
 			LOAD_COUNT: next_state = CHECK_COUNT;
-			//OVERWRITE_STAR: next_state = ??;
+			CLEAN_STAR: begin
+				if(doneClean)
+					next_state = CHECK_COUNT;
+				else//keep cleaning until done!
+					next_state = CLEAN_STAR;
+			end
 			//END_OF_IMG: next_state = ??;
 			default: next_state = CHECK_COUNT;
 		
@@ -183,10 +201,11 @@ module state_machine1(input resetn, clk, starFound, endOfImg, doneStarMap, xMax,
 		ld_count = 1'b0;
 		countXEn = 1'b0;
 		countYEn = 1'b0;
-		goStarMap = 1'b0;
+		goMapRows = 1'b0;
+		goMapColumns = 1'b0;
 		plotEn = 1'b0;
 		goDraw = 1'b0;
-		wrEn = 1'b0;
+		goClean = 1'b0;
 		newRow = 1'b0;
 		
 		case(current_state)
@@ -195,10 +214,12 @@ module state_machine1(input resetn, clk, starFound, endOfImg, doneStarMap, xMax,
 			end
 			INCR_Y: begin
 				countYEn = 1'b1;
-				newRow = 1'b1;
 			end
-			MAP_STAR: begin
-				goStarMap = 1'b1;
+			MAP_TOP_BOT: begin
+				goMapRows = 1'b1;
+			end
+			MAP_L_R: begin
+				goMapColumns = 1'b1;
 			end
 			DRAW_SQ: begin
 				goDraw = 1'b1;
@@ -206,9 +227,10 @@ module state_machine1(input resetn, clk, starFound, endOfImg, doneStarMap, xMax,
 			LOAD_COUNT: begin
 				ld_count = 1'b1;
 			end
+			CLEAN_STAR: begin
+				goClean = 1'b1;
+			end
 		//END_OF_IMG: plotEn = 1'b1; ????
-		//OVERWRITE_STAR: wrEn = 1'b1; ???
-		
 		endcase
 	
 	end
