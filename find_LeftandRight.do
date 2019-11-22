@@ -6,7 +6,7 @@ vlib work
 
 
 
-vlog find_LeftandRight.v ram36x3_1.v
+vlog find_LeftandRight.v ram3600x3_sq.v
 
 
 
@@ -29,15 +29,10 @@ force {TopandBottomFound} 1 0ns, 0 {12 ns}
 
 
 
-force {mostTop} 010
+force {mostTop} 010001
+force {mostBottom} 101110
 
 
-force {mostBottom} 110
-
-
-force {midPix} 011
-
-
-
-run 500 ns
+force {midPix} 100101
+run 25000 ns
 

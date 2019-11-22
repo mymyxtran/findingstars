@@ -1,11 +1,20 @@
 // I realised that to start this module, we need the starFound signal to be high THEN low.... because right now, I am driving the signal high then low
-module test(
-				input clk, starFound, input [2:0]xIn,
-	input [2:0] yIn, output [2:0] mostBottom, output [2:0] mostTop);
+module test( clk, starFound, xIn, yIn, mostBottom, mostTop);
 				
+	parameter xSz = 6;
+	parameter ySz = 6;
+	
+	input clk, starFound;
+	input [xSz-1:0] xIn;
+	input [ySz-1:0] yIn;
+	output [ySz-1:0] mostBottom;
+	output [ySz-1:0] mostTop;
+	
 				
-				wire resetn, countXEn, countYEn, pLoad, rightEdgeReached, bottomEdgeReached, TopandBottomFound; 
-				wire [2:0]midPix;
+	wire resetn, countXEn, countYEn, pLoad, rightEdgeReached, bottomEdgeReached, TopandBottomFound; 
+	wire [xSz-1:0]midPix;
+	wire [2:0] pixVal;
+	wire [11:0] addressOut;
 
 				
 	findTopandBottom u1(	 	//inputs
@@ -22,9 +31,10 @@ module test(
 									.mostTop(mostTop), 
 									.midPix(midPix),
 									.rightEdgeReached(rightEdgeReached),
-									.bottomEdgeReached(bottomEdgeReached)); 	
+									.bottomEdgeReached(bottomEdgeReached),
+									.p(pixVal), .a(addressOut)); 	
 								
-	controlTopandBottom u2( 	
+	controlTopandBottom u5( 	
 										//inputs
 										.rightEdgeReached(rightEdgeReached),
 										.bottomEdgeReached(bottomEdgeReached), 
@@ -53,17 +63,17 @@ module findTopandBottom(
 		mostTop,
 		midPix,
 		rightEdgeReached,
-		bottomEdgeReached
+		bottomEdgeReached, p, a
 		);  
 
-	parameter xSz = 3;
-	parameter ySz = 3;
-	parameter addrSz = 6;
+	parameter xSz = 6;
+	parameter ySz = 6;
+	parameter addrSz = 12;
 	parameter colSz = 3;
 
 	// Size of image 
-	parameter y_resolution = 4'd6;
-	parameter x_resolution = 4'd6;
+	parameter y_resolution = 6'd60;
+	parameter x_resolution = 6'd60;
 
 	//set the threshold for pixel value
 	localparam THRESHOLD = 0;
@@ -93,31 +103,34 @@ module findTopandBottom(
 	reg[xSz-1:0] yOriginal; // store inital y value to have top most
 
 	wire[addrSz-1:0] addressOut;//address wire from translator
+	wire[addrSz-1:0] addressOut_1;
 
 	wire[colSz-1:0] pixVal; 
-	
+		wire[colSz-1:0] pixVal_1;
+	wire [xSz:0] calc_midPix;
 	//instantiate the x counter
 	always@(posedge clk) begin
 	
 		if(!resetn) begin
-			xCount <= 0;
+			xCount <= xIn;
 		end
 		else if(pLoad) begin // Initally, after the star is found, load in the x coordinate value.
 			xCount <= xIn;	
 			xOriginal <= xIn;
 		end
 		else if(countXEn)
-			xCount <= xCount + 1'd1;		
+			xCount <= xCount + 1'd1;
+
 		
 	end
 	
 	// This value will not change once we start looking for the most bottom, since xCount and xOriginal do not change.
-	assign midPix = (xCount + xOriginal) >> 1; // using the right most value and the orignal calculate the midpix
-	
+	assign calc_midPix = (xCount + xOriginal) >> 1; // using the right most value and the orignal calculate the midpix
+	assign midPix = calc_midPix[xSz-1:0];
 	//instantiate the y counter
 	always@(posedge clk) begin
 		if(!resetn)
-			yCount <= 0;
+			yCount <= yIn;
 		else if(pLoad) begin //initally, after the star is found, load in the y coordinate value.
 			yCount <= yIn;
 			yOriginal <= yIn;
@@ -129,21 +142,29 @@ module findTopandBottom(
 	// use trans0 and ram0 for access to xCount pixval
 	//instantiate address translator // input your x,y coordinates // output is the address you want to access
 	address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
-
 	//instantiate mem block
-	ram36x3_1 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
-
+	ram3600x3_sq ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	. // Edge-case, the end (right-end) of the screen is reached
 	assign rightEdgeReached = (pixVal == THRESHOLD) || (xCount == x_resolution); // This signal indicates when to start mostBottom traversal. 
 	
+	
+	// use trans1 and ram1 for to find bottom and top most
+	address_translator trans1(.x(midPix), .y(yCount), .mem_address(addressOut_1));
+	ram3600x3_sq ram1(.address(addressOut_1),.q(pixVal_1), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
+	
 	// This signal stop datapath, since all calculations are complete.
-	assign bottomEdgeReached = ((pixVal == THRESHOLD) && (countYEn == 1'd1)) || (mostBottom == y_resolution); // Edge-case, the end (bottom) of the screen is reached. 
+	assign bottomEdgeReached = ((pixVal_1 == THRESHOLD) || (mostBottom == y_resolution)); // Edge-case, the end (bottom) of the screen is reached. 
 
 	// Once bottomEdge is found, mostBottom will have the highest yvalue coordinate stored, yCount.
 	assign mostBottom = yCount;
 	
 	// Output this for easier input into next fsm.
 	assign mostTop = yOriginal;
+	
+	output [2:0] p;
+	output [11:0] a;
+	assign a = addressOut;
+		assign p = pixVal_1;
 
 endmodule 
 
@@ -163,7 +184,8 @@ localparam	STARFOUND = 4'd0,
 			LoadIn = 4'd1,
 			INCREMENT_X = 4'd2,
 			INCREMENT_Y = 4'd3,
-			DONESEARCH = 4'd4;
+			CHECK_IF_BOTTOMREACHED = 4'd4,
+			DONESEARCH = 4'd5;
 
 always@(*)
 begin: state_table
@@ -174,7 +196,8 @@ begin: state_table
 		
 		INCREMENT_X: next_state = rightEdgeReached ? INCREMENT_Y : INCREMENT_X; // begin search for most bottom
 		
-		INCREMENT_Y: next_state = bottomEdgeReached ? DONESEARCH : INCREMENT_Y;
+		INCREMENT_Y: next_state = CHECK_IF_BOTTOMREACHED;
+		CHECK_IF_BOTTOMREACHED: next_state = bottomEdgeReached ? DONESEARCH : INCREMENT_Y;
 		DONESEARCH: next_state = DONESEARCH;
 		default: next_state = STARFOUND;
 	
@@ -224,10 +247,11 @@ end
 endmodule
 
 module address_translator(x, y, mem_address);
-
-	input [2:0] x; 
-	input [2:0] y;	
-	output [5:0] mem_address;
+	
+	// 60 x 60
+	input [5:0] x; 
+	input [5:0] y;	
+	output [11:0] mem_address;
 	
 	/* The basic formula is address = y*WIDTH + x;
 	 * For 320x240 resolution we can write 320 as (256 + 64). Memory address becomes
@@ -237,11 +261,9 @@ module address_translator(x, y, mem_address);
 	 * inputs. By default the use a '+' operator will generate a signed adder.
 	 * Similarly, for 160x120 resolution we write 160 as 128+32.
 	 */
-	 //width = 6 = 4 + 2
-	 //so address = (y*4) + (y*2) + x
-	 assign mem_address = ({1'b0, y, 2'd0} + {1'b0, y, 1'd0} + {1'b0, x});
+	 //width = 60 = 32 + 16 + 8 + 4
+	 //so address = (y*32) + (y*16)  + (y*8)+ (y*4)+ x
+	 assign mem_address = ({1'b0, y, 5'd0} + {1'b0, y, 4'd0} +{1'b0, y, 3'd0} + {1'b0, y, 2'd0} + {1'b0,x});
 	
 
 endmodule
-
-
