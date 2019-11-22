@@ -1,4 +1,4 @@
-module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop);
+module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound);
 				
 	parameter xSz = 6;
 	parameter ySz = 6;
@@ -8,14 +8,13 @@ module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop);
 	input [ySz-1:0] yIn;
 	output [ySz-1:0] mostBottom;
 	output [ySz-1:0] mostTop;
-	
-				
-	wire resetn, countXEn, countYEn, pLoad, rightEdgeReached, bottomEdgeReached, TopandBottomFound; 
+	output TopandBottomFound;
+		
+	wire resetn, countXEn, countYEn, pLoad, rightEdgeReached, bottomEdgeReached; 
 	wire [xSz-1:0]midPix;
 	wire [2:0] pixVal;
 	wire [11:0] addressOut;
-
-				
+		
 	findTopandBottom u1(	 	//inputs
 									.clk(clk), 
 									.resetn(resetn),
