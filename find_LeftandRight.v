@@ -4,11 +4,11 @@
 
 /* Note: The TopandBottomFound signal needs to go high then low, to start the fsm initally... So that it knows what state to be in first.
  *       Or is this unnecessary? */
-module test(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostRight,  mostLeft,  rightFound, leftFound);
+module mapLeftandRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostRight,  mostLeft,  rightFound, leftFound);
 	
 	parameter xSz = 6;
 	parameter ySz = 6;
-	
+
 	input clk, TopandBottomFound;
 	input [ySz-1:0]mostTop;
 	input [ySz-1:0]mostBottom;
@@ -18,7 +18,6 @@ module test(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostRight,  most
 	output rightFound;
 	output leftFound;		
 					
-	
 	wire  R_ld_x, R_ld_y, resetnR, R_countXEn, R_countYEn, rightEdgeReached, doneR;  // wires used by the find_Right
 	
 	find_Right r1(		//inputs
@@ -102,7 +101,8 @@ module find_Right(
 		rightEdgeReached, 
 		mostRight
 		);  
-
+	
+	// Depends on image size 
 	parameter xSz = 6;
 	parameter ySz = 6;
 	parameter addrSz = 12;
@@ -111,7 +111,7 @@ module find_Right(
 	// Size of Image 
 	parameter x_resolution = 6'd60;
 
-	//set the threshold for pixel value
+	// set the threshold for pixel value
 	localparam THRESHOLD = 0;
 
 	input clk, resetn;
@@ -132,15 +132,18 @@ module find_Right(
 	output doneR;
 	output reg [ySz-1:0] mostRight;
 	
-	reg[xSz-1:0] xCount;//output wires for counters
+	//output wires for counters
+	reg[xSz-1:0] xCount; 
 	reg[ySz-1:0] yCount;
 	
-	wire[addrSz-1:0] addressOut;//address wire from translator
-
+	//address wire from translator
+	wire[addrSz-1:0] addressOut;
 	wire[colSz-1:0] pixVal; 
+	
+	// Signal to control value of mostRight
 	wire update_mostRight;
 	
-	//instantiate the x counter
+	// instantiate the x counter
 	always@(posedge clk) begin
 	
 		if(!resetn) begin
@@ -149,16 +152,16 @@ module find_Right(
 		else if(ld_x) begin // After TopandBottom is found or when you move down one row, load in the midpix value.
 			xCount <= midPix;	
 		end
-		else if(countXEn == 1'b1 && rightEdgeReached ==1'b1 ) begin
+		else if(countXEn == 1'b1 && rightEdgeReached == 1'b1 ) begin // This is necessary so that you stop the overcounting. 
 			xCount <= xCount;
 		end
 		else if(countXEn) begin
-			xCount <= xCount + 1'd1; // traverse right until the mostRightEdge		
+			xCount <= xCount + 1'd1; // Traverse right until the mostRightEdge		
 		end
 		
 	end
 		
-	//instantiate the y counter
+	// instantiate the y counter
 	always@(posedge clk) begin
 		if(!resetn)
 			yCount <= mostTop;
@@ -178,8 +181,9 @@ module find_Right(
 	ram3600x3_sq ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
 
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
-	assign rightEdgeReached = (pixVal == THRESHOLD) || (mostRight == x_resolution); // 
+	assign rightEdgeReached = (pixVal == THRESHOLD) || (mostRight == x_resolution); 
 	
+	// Chck if mostRight should be updated
 	assign update_mostRight = (mostRight < xCount);
 	
 	always@(posedge clk) begin
@@ -195,8 +199,7 @@ module find_Right(
 	  
 	end
 
-	
-	// This signal stop datapath, since all calculations are complete.
+	// This signal stops the datapath, since all calculations are complete.
 	assign doneR = (yCount == mostBottom) || (mostRight == x_resolution); 
 
 endmodule 
@@ -240,7 +243,6 @@ begin: state_table
 	endcase
 
 end
-
 
 //output logic/datapath control
 always@(*)
@@ -288,7 +290,6 @@ end
 endmodule
 
 
-
 module find_Left(
 		ld_x, ld_y, 
 		midPix, 
@@ -329,10 +330,12 @@ module find_Left(
 	output doneL;
 	output reg [ySz-1:0] mostLeft;
 	
-	reg[xSz-1:0] xCount;//output wires for counters
+	//output wires for counters
+	reg[xSz-1:0] xCount;
 	reg[ySz-1:0] yCount;
 	
-	wire[addrSz-1:0] addressOut;//address wire from translator
+	//address wire from translator
+	wire[addrSz-1:0] addressOut;
 
 	wire[colSz-1:0] pixVal; 
 	wire update_mostLeft;
@@ -350,7 +353,7 @@ module find_Left(
 			xCount <= xCount;
 		end
 		else if(countXEn) begin
-			xCount <= xCount - 1'd1; // traverse right until the mostRightEdge		
+			xCount <= xCount - 1'd1; // traverse left until the mostLeftEdge		
 		end
 	end
 		
@@ -387,7 +390,7 @@ module find_Left(
 		end
 	end
 	
-	// This signal stop datapath, since all calculations are complete.
+	// This signal stops the datapath, since all calculations are complete.
 	assign doneL = (yCount == mostBottom) || (mostLeft == 1'b0); 
 
 endmodule 
@@ -417,14 +420,20 @@ begin: state_table
 			
 	case(current_state)
 		TOPANDBOTTOMFOUND: next_state = LoadIn;
+		
+		//Load in your top and bottom values
 		LoadIn: next_state = INCREMENT_X;
-		INCREMENT_X: next_state = CHECK_LEFT; // begin search for most bottom
 		
-		//nothing happens. here we look at the value of left edge. Need this state 
-		CHECK_LEFT: next_state = leftEdgeReached ? RELOAD_MIDPIX : INCREMENT_X; // begin search for most bottom
+		// start x counter
+		INCREMENT_X: next_state = CHECK_LEFT; 
 		
-		// This state reloads the midPix. Need this because loading is done after one state.
+		//nothing happens. here we look at the value of left edge
+		CHECK_LEFT: next_state = leftEdgeReached ? RELOAD_MIDPIX : INCREMENT_X; 
+		
+		// This state reloads the midPix. Need this, because loading is done after one state.
 		RELOAD_MIDPIX: next_state = INCREMENT_Y;
+		
+		// move down a row
 		INCREMENT_Y: next_state = doneL ? LEFTFOUND : INCREMENT_X;
 		LEFTFOUND: next_state = LEFTFOUND;
 		default: next_state = TOPANDBOTTOMFOUND;
@@ -478,7 +487,6 @@ always@(posedge clk) begin
 end
 
 endmodule
-
 
 module address_translator(x, y, mem_address);
 	
