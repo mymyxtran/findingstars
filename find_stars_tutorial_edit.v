@@ -44,8 +44,13 @@ module findWhite(input[2:0] xIn, yIn, input clk, resetn, doneDraw, doneStarMap, 
 
 	wire pLoad, countXEn, countYEn, wrEn, starFound, endOfImg, xMax, newRow;
 	
+	wire starFound_DL, starFound_Pulse; //added wires
+	
+	
 	topDataPath topDP(.pLoad(pLoad), .xIn(xIn), .yIn(yIn), .countXEn(countXEn), .countYEn(countYEn), .newRow(newRow), 
-							.clk(clk), .resetn(resetn), .wrEn(wrEn), .starFound(starFound), .endOfImg(endOfImg), .xMax(xMax));
+							.clk(clk), .resetn(resetn), .wrEn(wrEn), .starFound(starFound), .endOfImg(endOfImg), .xMax(xMax),
+							//added signals
+							.starFound_DL(starFound_DL), .starFound_pulse(starFound_Pulse));
 							
 	
 	state_machine1 fsm1(.resetn(resetn), .clk(clk), .starFound(starFound), .endOfImg(endOfImg), .newRow(newRow),
@@ -56,7 +61,7 @@ module findWhite(input[2:0] xIn, yIn, input clk, resetn, doneDraw, doneStarMap, 
 endmodule
 
 
-module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, newRow, clk, resetn, wrEn, starFound, endOfImg, xMax);
+module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, newRow, clk, resetn, wrEn, starFound, endOfImg, xMax, starFound_DL, starFound_pulse);
 
 		parameter xSz = 3;
 		parameter ySz = 3;
@@ -99,6 +104,10 @@ module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, newRow, clk, resetn, wrE
 		
 		wire[colSz-1:0] pixVal;
 		
+		// Additional output/wires for starFound_pulse
+		output starFound_pulse;
+		output reg starFound_DL; // leave as output for now
+		
 		//instantiate the x counter
 		always@(posedge clk) begin
 			if(!resetn)
@@ -135,6 +144,17 @@ module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, newRow, clk, resetn, wrE
 		ram36x3_1 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(wrEn), .data(writeCol));
 		
 		assign starFound = (pixVal > THRESHOLD);
+		
+		assign starFound_pulse = (!starFound_DL) && (starFound);
+		
+		always@(posedge clk) begin
+			if(starFound) begin
+				starFound_DL <= 1'b1;
+			end
+			else begin
+				starFound_DL <= 1'b0;
+			end
+		end
 		
 
 endmodule
@@ -246,5 +266,3 @@ module address_translator(x, y, mem_address);
 	
 
 endmodule
-
-
