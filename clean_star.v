@@ -1,6 +1,36 @@
 `timescale 1ns/1ns
 
-module clean_star();
+module clean_star(goClean, xLeft, xRight, yTop, yBottom, clk, xOut, yOut, colOut, doneClean, wrEn);
+
+	//contants; depend on image size and colour res
+	parameter xSz = 3;
+	parameter ySz = 3;
+	parameter colSz = 3;
+	
+	//these define the dimensions of the box
+	input[xSz-1:0] xLeft, xRight;
+	input[ySz-1:0] yTop, yBottom;
+	
+	input clk, goClean;
+	
+	output[xSz-1:0] xOut;
+	output[ySz-1:0] yOut;
+	
+	output[colSz-1:0] colOut;
+	
+	output doneClean;
+	
+	output wrEn;
+	
+	wire xEdge, yEdge, countYEn, countXEn, ld_x, ld_y, resetn;
+	
+	cleanDataPath cleanDP0(.xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom), .clk(clk), .resetn(resetn),
+								.countYEn(countYEn), .countXEn(countXEn), .ld_x(ld_x),.ld_y(ld_y),
+								.xEdge(xEdge), .yEdge(yEdge), .xOut(xOut), .yOut(yOut), .colOut(colOut));
+		
+	cleanControl cleanfsm0(.clk(clk), .resetn(resetn), .xEdge(xEdge), .yEdge(yEdge), .goClean(goClean), 
+						.countXEn(countXEn), .countYEn(countYEn), .ld_x(ld_x), .ld_y(ld_y), .doneClean(doneClean), .wrEn(wrEn));
+		
 
 endmodule
 
@@ -16,7 +46,8 @@ module cleanDataPath(xLeft, xRight, yTop, yBottom, countXEn, countYEn, ld_x, ld_
 	input[xSz-1:0] xLeft, xRight;
 	input[ySz-1:0] yTop, yBottom;
 	
-	input clk, resetn;
+	input clk;
+	input resetn;//comes from FSM
 	
 	input ld_x, ld_y; //parallel load for counters
 	
@@ -69,11 +100,13 @@ module cleanDataPath(xLeft, xRight, yTop, yBottom, countXEn, countYEn, ld_x, ld_
 endmodule
 
 
-module cleanControl(input clk, resetn, xEdge, yEdge, goClean, output reg countXEn, countYEn, ld_x, ld_y, doneClean, wrEn);
+module cleanControl(input clk, xEdge, yEdge, goClean, output reg countXEn, countYEn, ld_x, ld_y, wrEn, resetn, output doneClean);
 
 	reg [3:0] current_state, next_state; 
-    
-   localparam   RESET = 4'd0,
+   
+	reg doneClean_s, doneClean_DL;//for pulsing
+	
+   localparam   START_CLEAN = 4'd0,
 					 STORE_Y = 4'd1,
 					 STORE_X  = 4'd2,
 					 INCR_X = 4'd3,
@@ -85,7 +118,7 @@ module cleanControl(input clk, resetn, xEdge, yEdge, goClean, output reg countXE
 	always@(*)
 	begin: state_table
 		case (current_state)
-		RESET: next_state = DONE_CLEAN;
+		START_CLEAN: next_state = STORE_Y;
 		STORE_Y: next_state = STORE_X;
 		STORE_X: next_state = CLEAN_PIX;
 		CLEAN_PIX: next_state = INCR_X;
@@ -118,10 +151,14 @@ module cleanControl(input clk, resetn, xEdge, yEdge, goClean, output reg countXE
 		ld_y = 1'b0;
 		countXEn = 1'b0;
 		countYEn = 1'b0;
-		doneClean = 1'b0;
+		doneClean_s = 1'b0;
 		wrEn = 1'b0;
+		resetn = 1'b1;
 		
 		case(current_state)
+			START_CLEAN: begin
+				resetn = 1'b0;
+			end
 			STORE_X: begin
 				ld_x = 1'b1;
 			end
@@ -138,7 +175,7 @@ module cleanControl(input clk, resetn, xEdge, yEdge, goClean, output reg countXE
 				wrEn = 1'b1;//write "black" to the pixel in memory
 			end
 			DONE_CLEAN: begin
-				doneClean = 1'b1;
+				doneClean_s = 1'b1;
 			end
 		
 		endcase
@@ -146,11 +183,22 @@ module cleanControl(input clk, resetn, xEdge, yEdge, goClean, output reg countXE
 	
 	//current state registers
 	always@(posedge clk) begin
-		if(!resetn)
-			current_state <= RESET;
+		if(goClean)//add another resetn?
+			current_state <= START_CLEAN;
 		else
 			current_state <= next_state;
    end       
 
+	//for pulses!
+	assign doneClean = (!doneClean_DL) && (doneClean_s);
+	
+	always@(posedge clk) begin
+		if(doneClean_s)
+			doneClean_DL <= 1'b1;
+		else
+			doneClean_DL <= 0;
+	
+	end
+	
 endmodule
 

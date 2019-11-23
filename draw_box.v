@@ -1,6 +1,6 @@
 `timescale 1ns/1ns
 
-module draw_box(goDraw, xLeft, xRight, yTop, yBottom, clk, resetn, xOut, yOut, colOut, doneDraw,plotEn);
+module draw_box(goDraw, xLeft, xRight, yTop, yBottom, clk, xOut, yOut, colOut, doneDraw,plotEn);
 
 	//contants; depend on image size and colour res
 	parameter xSz = 3;
@@ -11,7 +11,7 @@ module draw_box(goDraw, xLeft, xRight, yTop, yBottom, clk, resetn, xOut, yOut, c
 	input[xSz-1:0] xLeft, xRight;
 	input[ySz-1:0] yTop, yBottom;
 	
-	input clk, resetn, goDraw;
+	input clk, goDraw;
 	
 	output[xSz-1:0] xOut;
 	output[ySz-1:0] yOut;
@@ -22,7 +22,7 @@ module draw_box(goDraw, xLeft, xRight, yTop, yBottom, clk, resetn, xOut, yOut, c
 	
 	output plotEn;
 	
-	wire xEdge, yEdge, doneNE, doneNE_reg, countYEn, countXEn, ld_x, ld_y;
+	wire xEdge, yEdge, doneNE, doneNE_reg, countYEn, countXEn, ld_x, ld_y, resetn;
 	
 	drawDataPath drawDP0(.xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom), .clk(clk), .resetn(resetn),
 								.countYEn(countYEn), .countXEn(countXEn), .ld_x(ld_x),.ld_y(ld_y), .doneNE(doneNE), .doneNE_reg(doneNE_reg),
@@ -45,7 +45,7 @@ module drawDataPath(xLeft, xRight, yTop, yBottom, countXEn, countYEn, ld_x, ld_y
 	input[xSz-1:0] xLeft, xRight;
 	input[ySz-1:0] yTop, yBottom;
 	
-	input clk, resetn;
+	input clk, resetn;//reset comes from FSM
 	
 	input ld_x, ld_y; //parallel load for counters
 	
@@ -87,7 +87,7 @@ module drawDataPath(xLeft, xRight, yTop, yBottom, countXEn, countYEn, ld_x, ld_y
 			if(!resetn)
 				yCount <= 0;
 			else if(ld_y)
-				yCount <= yTop;
+				yCount <= yTop - 1;//top is a white pix
 			else if(countYEn)
 				yCount <= yCount + 1;			
 	end
@@ -119,11 +119,13 @@ endmodule
 	Phase 2: draw the west and south sides. Increment y and draw each time, keeping x constant, then increment x and draw each time
 	keeping y constant
 */
-module drawControl(input clk, resetn, xEdge, yEdge, doneNE_reg, goDraw, output reg countXEn, countYEn, doneNE, ld_x, ld_y, doneDraw, plotEn);
+module drawControl(input clk, xEdge, yEdge, doneNE_reg, goDraw, output reg countXEn, countYEn, doneNE, ld_x, ld_y, plotEn, resetn, output doneDraw);
 
 	reg [3:0] current_state, next_state; 
+	
+	reg doneDraw_DL, doneDraw_s; //delay and signal for pulsing
     
-   localparam   RESET = 4'd0,
+   localparam   START_DRAW = 4'd0,
 					 STORE_X = 4'd1,
 					 STORE_Y  = 4'd2,
 					 INCR_X = 4'd3,
@@ -137,7 +139,7 @@ module drawControl(input clk, resetn, xEdge, yEdge, doneNE_reg, goDraw, output r
 	always@(*)
 	begin: state_table
 		case (current_state)
-		RESET: next_state = DONE_DRAW;
+		START_DRAW: next_state = STORE_X;
 		STORE_X: next_state = STORE_Y;
 		STORE_Y: begin
 			if(!doneNE_reg)//has the northeast phase been completed?
@@ -166,7 +168,7 @@ module drawControl(input clk, resetn, xEdge, yEdge, doneNE_reg, goDraw, output r
 		DONE_NE: next_state = STORE_X;
 		DONE_DRAW: begin
 			if(goDraw)//wait at DONE_DRAW until told to start drawing again
-				next_state = STORE_X;
+				next_state = START_DRAW;
 			else
 				next_state = DONE_DRAW;
 			end
@@ -182,10 +184,14 @@ module drawControl(input clk, resetn, xEdge, yEdge, doneNE_reg, goDraw, output r
 		countXEn = 1'b0;
 		countYEn = 1'b0;
 		doneNE = 1'b0;
-		doneDraw = 1'b0;
+		doneDraw_s = 1'b0;
 		plotEn = 1'b0;
+		resetn = 1'b1;
 		
 		case(current_state)
+			START_DRAW: begin
+				resetn = 1'b0;
+			end
 			STORE_X: begin
 				ld_x = 1'b1;
 			end
@@ -208,7 +214,7 @@ module drawControl(input clk, resetn, xEdge, yEdge, doneNE_reg, goDraw, output r
 				doneNE = 1'b1;
 			end
 			DONE_DRAW: begin
-				doneDraw = 1'b1;
+				doneDraw_s = 1'b1;
 			end
 		
 		endcase
@@ -216,11 +222,22 @@ module drawControl(input clk, resetn, xEdge, yEdge, doneNE_reg, goDraw, output r
 	
 	//current state registers
 	always@(posedge clk) begin
-		if(!resetn)
-			current_state <= RESET;
+		if(goDraw)//add another resetn?
+			current_state <= START_DRAW;
 		else
 			current_state <= next_state;
-   end       
+   end
+
+	//for pulses!
+	assign doneDraw = (!doneDraw_DL) && (doneDraw_s);
+	
+	always@(posedge clk) begin
+		if(doneDraw_s)
+			doneDraw_DL <= 1'b1;
+		else
+			doneDraw_DL <= 0;
+	
+	end
 
 
 endmodule

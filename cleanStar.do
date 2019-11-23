@@ -9,7 +9,7 @@ log -r {/*}
 add wave {/*}
 
 force {clk} 0 0ns, 1 {10ns} -r 20ns
-force {resetn} 0 0ns, 1 {12 ns}
+force {goClean} 1 0ns, 0 {13 ns}
 force {xLeft} 001
 force {xRight} 100
 force {yTop} 011
