@@ -4,7 +4,7 @@ vlib work
 
 vlog master.v ram36x3_1.v
 
-vsim -L altera_mf_ver -L altera_mf  findWhite 
+vsim -L altera_mf_ver -L altera_mf  master
 
 log -r {/*}
 

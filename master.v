@@ -1,16 +1,16 @@
 //this module combines topDataPath and state_machine1
-module master(input[2:0] xIn, yIn, input clk, resetn, doneDraw, doneClean, topBottomFound, leftFound, rightFound, output goDraw, goClean,
+module master(input[2:0] xIn, yIn, input GO, clk, resetn, doneDraw, doneClean, topBottomFound, leftFound, rightFound, output goDraw, goClean,
 				goMapColumns, goMapRows, plotEn);
 
-	wire pLoad, countXEn, countYEn, wrEn, starFound, endOfImg, newRow;
+	wire pLoad, countXEn, countYEn, wrEn, starFound, endOfImg;
 	
 	assign wrEn = 1'b0;
 	
-	topDataPath topDP(.pLoad(pLoad), .xIn(xIn), .yIn(yIn), .countXEn(countXEn), .countYEn(countYEn), .newRow(newRow), 
+	topDataPath topDP(.pLoad(pLoad), .xIn(xIn), .yIn(yIn), .countXEn(countXEn), .countYEn(countYEn),  
 							.clk(clk), .resetn(resetn), .wrEn(wrEn), .starFound(starFound), .endOfImg(endOfImg));
 							
 	
-	state_machine1 fsm1(.resetn(resetn), .clk(clk), .starFound(starFound), .endOfImg(endOfImg), .newRow(newRow),
+	state_machine1 fsm1(.resetn(resetn), .clk(clk), .starFound(starFound), .endOfImg(endOfImg),
 							  .doneDraw(doneDraw), .doneClean(doneClean), .topBottomFound(topBottomFound),
 								.leftFound(leftFound), .rightFound(rightFound), .ld_count(pLoad), .countXEn(countXEn), .countYEn(countYEn), .plotEn(plotEn), 
 								.goDraw(goDraw), .goMapRows(goMapRows), .goMapColumns(goMapColumns), .goClean(goClean));
@@ -18,7 +18,7 @@ module master(input[2:0] xIn, yIn, input clk, resetn, doneDraw, doneClean, topBo
 endmodule
 
 
-module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, newRow, clk, resetn, wrEn, starFound, endOfImg);
+module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, clk, resetn, wrEn, starFound, endOfImg);
 
 		parameter xSz = 3;
 		parameter ySz = 3;
@@ -39,7 +39,6 @@ module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, newRow, clk, resetn, wrE
 		input pLoad;//parallel load counters
 		input countXEn, countYEn; //enable for counters
 		
-		input newRow; //switching to a new row, so reset x Count to 0
 		
 		//input x and y coor to load counters if required
 		input[xSz-1:0] xIn;
@@ -95,12 +94,18 @@ module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, newRow, clk, resetn, wrE
 
 endmodule
 
-module state_machine1(input resetn, clk, starFound, endOfImg, topBottomFound, leftFound, rightFound, xMax, doneDraw, doneClean,
-								output reg ld_count, countXEn, countYEn, plotEn, goMapRows, goMapColumns, goDraw, goClean, newRow);
+module state_machine1(input resetn, clk, GO, starFound, endOfImg, topBottomFound, leftFound, rightFound, xMax, doneDraw, doneClean,
+								output reg ld_count, countXEn, countYEn, plotEn, output goMapRows, goMapColumns, goDraw, goClean);
 
 	reg [3:0] current_state, next_state; 
-    
+   
+	//for pulses
+	reg goMapRows_s, goMapColumns_s, goDraw_s, goClean_s;
+	
+	reg goMapRows_DL, goMapColumns_DL, goDraw_DL, goClean_DL;
+	
    localparam   RESET = 4'd0,
+					 WAIT_FOR_START = 4'd11,
 					 CHECK_COUNT  = 4'd1,
 					 CHECK_PIX  = 4'd2,
 					 INCR_X = 4'd3,
@@ -116,7 +121,8 @@ module state_machine1(input resetn, clk, starFound, endOfImg, topBottomFound, le
 	always@(*)
 	begin: state_table
 		case(current_state)
-			RESET: next_state = CHECK_COUNT;
+			RESET: next_state = WAIT_FOR_START;
+			WAIT_FOR_START: next_state = (GO) ? CHECK_COUNT : WAIT_FOR_START;
 			CHECK_COUNT: next_state = (endOfImg) ? END_OF_IMG : CHECK_PIX;
 			CHECK_PIX: next_state = (starFound) ? MAP_TOP_BOT : INCR_X;
 			INCR_X: next_state = CHECK_COUNT;
@@ -130,7 +136,7 @@ module state_machine1(input resetn, clk, starFound, endOfImg, topBottomFound, le
 				else//keep cleaning until done!
 					next_state = CLEAN_STAR;
 			end
-			//END_OF_IMG: next_state = ??;
+			END_OF_IMG: next_state = WAIT_FOR_START;
 			default: next_state = CHECK_COUNT;
 		
 		endcase
@@ -144,33 +150,32 @@ module state_machine1(input resetn, clk, starFound, endOfImg, topBottomFound, le
 		ld_count = 1'b0;
 		countXEn = 1'b0;
 		countYEn = 1'b0;
-		goMapRows = 1'b0;
-		goMapColumns = 1'b0;
+		goMapRows_s = 1'b0;
+		goMapColumns_s = 1'b0;
 		plotEn = 1'b0;
-		goDraw = 1'b0;
-		goClean = 1'b0;
-		newRow = 1'b0;
+		goDraw_s = 1'b0;
+		goClean_s = 1'b0;
 		
 		case(current_state)
 			INCR_X: begin
 				countXEn = 1'b1;
 			end
 			MAP_TOP_BOT: begin
-				goMapRows = 1'b1;
+				goMapRows_s = 1'b1;
 			end
 			MAP_L_R: begin
-				goMapColumns = 1'b1;
+				goMapColumns_s = 1'b1;
 			end
 			DRAW_SQ: begin
-				goDraw = 1'b1;
+				goDraw_s = 1'b1;
 			end
 			LOAD_COUNT: begin
 				ld_count = 1'b1;
 			end
 			CLEAN_STAR: begin
-				goClean = 1'b1;
+				goClean_s = 1'b1;
 			end
-		//END_OF_IMG: plotEn = 1'b1; ????
+			//END_OF_IMG: plotEn = 1'b1; ????
 		endcase
 	
 	end
@@ -181,7 +186,30 @@ module state_machine1(input resetn, clk, starFound, endOfImg, topBottomFound, le
 			current_state <= RESET;
 		else
 			current_state <= next_state;
-   end       
+   end  
+
+	//for pulses!
+	assign goMapRows = (!goMapRows_DL) && (goMapRows_s);
+	assign goMapColumns = (!goMapColumns_DL) && (goMapColumns_s);
+	assign goDraw = (!goDraw_DL) && (goDraw_s);
+	assign goClean = (!goClean_DL) && (goClean_s);
+	
+	always@(posedge clk) begin
+		if(goMapRows_s)
+			goMapRows_DL <= 1'b1;
+		else if(goMapColumns_s)
+			goMapColumns_DL <= 1'b1;
+		else if(goDraw_s)
+			goDraw_DL <= 1'b1;
+		else if(goClean_s)
+			goClean_DL <= 1'b1;
+		else begin
+			goMapColumns_DL <= 0;
+			goMapRows_DL <= 0;
+			goDraw_DL <= 0;
+			goClean_DL <= 0;
+		end
+	end
 
 endmodule
 
