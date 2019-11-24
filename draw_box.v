@@ -3,8 +3,8 @@
 module draw_box(goDraw, xLeft, xRight, yTop, yBottom, clk, xOut, yOut, colOut, doneDraw,plotEn);
 
 	//contants; depend on image size and colour res
-	parameter xSz = 3;
-	parameter ySz = 3;
+	parameter xSz = 8;
+	parameter ySz = 7;
 	parameter colSz = 3;
 	
 	//these define the dimensions of the box
