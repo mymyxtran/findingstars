@@ -6,8 +6,8 @@
 */
 module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound);
 				
-	parameter xSz = 6;
-	parameter ySz = 6;
+	parameter xSz = 8;
+	parameter ySz = 7;
 	
 	input clk, starFound;
 	input [xSz-1:0] xIn;
@@ -68,9 +68,9 @@ module findTopandBottom(
 		bottomEdgeReached
 		);  
 
-	parameter xSz = 6;
-	parameter ySz = 6;
-	parameter addrSz = 12;
+	parameter xSz = 8;
+	parameter ySz = 7;
+	parameter addrSz = 15;
 	parameter colSz = 3;
 
 	// Size of image 
