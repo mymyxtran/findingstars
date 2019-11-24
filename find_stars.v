@@ -34,6 +34,26 @@ module find_stars
 		defparam vga0.MONOCHROME = "FALSE";
 		defparam vga0.BITS_PER_COLOUR_CHANNEL = 1;
 		defparam vga0.BACKGROUND_IMAGE = "oneStar160x120.mif";
+	
+	wire starFound;
+	wire[3:0] pixVal;
+	wire wrEn;
+	
+	localparam THRESHOLD = 0;
+	
+	topDataPath topDP(.pLoad(pLoad), .countXEn(countXEn), .countYEn(countYEn),  
+			  .clk(clk), .resetn(resetn), .wrEn(wrEn), .addressOut(addressOut), .endOfImg(endOfImg));
+	
+	ram19200x3_c imageMem(.q(pixVal), .address(address_out), .clock(CLOCK_50), .wren(wrEn));
+						
+	assign starFound = pixVal > THRESHOLD;
+	
+	
+	state_machine1 fsm1(.resetn(resetn), .clk(clk), .starFound(starFound), .endOfImg(endOfImg),
+							  .doneDraw(doneDraw), .doneClean(doneClean), .topBottomFound(topBottomFound),
+								.leftFound(leftFound), .rightFound(rightFound), .ld_count(pLoad), .countXEn(countXEn), .countYEn(countYEn), .plotEn(plotEn), 
+								.goDraw(goDraw), .goMapRows(goMapRows), .goMapColumns(goMapColumns), .goClean(goClean));
+
 			
 		
 
