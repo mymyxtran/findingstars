@@ -1,11 +1,12 @@
 `timescale 1ns/1ns
 
-module clean_star(goClean, xLeft, xRight, yTop, yBottom, clk, xOut, yOut, colOut, doneClean, wrEn);
+module clean_star(goClean, xLeft, xRight, yTop, yBottom, clk, addressOut, colOut, doneClean, wrEn);
 
 	//contants; depend on image size and colour res
-	parameter xSz = 8;
-	parameter ySz = 7;
+	parameter xSz = 3;
+	parameter ySz = 3;
 	parameter colSz = 3;
+	parameter addrSz = 6;
 	
 	//these define the dimensions of the box
 	input[xSz-1:0] xLeft, xRight;
@@ -13,8 +14,7 @@ module clean_star(goClean, xLeft, xRight, yTop, yBottom, clk, xOut, yOut, colOut
 	
 	input clk, goClean;
 	
-	output[xSz-1:0] xOut;
-	output[ySz-1:0] yOut;
+	output[addrSz-1:0] addressOut;
 	
 	output[colSz-1:0] colOut;
 	
@@ -26,7 +26,7 @@ module clean_star(goClean, xLeft, xRight, yTop, yBottom, clk, xOut, yOut, colOut
 	
 	cleanDataPath cleanDP0(.xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom), .clk(clk), .resetn(resetn),
 								.countYEn(countYEn), .countXEn(countXEn), .ld_x(ld_x),.ld_y(ld_y),
-								.xEdge(xEdge), .yEdge(yEdge), .xOut(xOut), .yOut(yOut), .colOut(colOut));
+								.xEdge(xEdge), .yEdge(yEdge), .addressOut(addressOut), .colOut(colOut));
 		
 	cleanControl cleanfsm0(.clk(clk), .resetn(resetn), .xEdge(xEdge), .yEdge(yEdge), .goClean(goClean), 
 						.countXEn(countXEn), .countYEn(countYEn), .ld_x(ld_x), .ld_y(ld_y), .doneClean(doneClean), .wrEn(wrEn));
@@ -38,10 +38,10 @@ module cleanDataPath(xLeft, xRight, yTop, yBottom, countXEn, countYEn, ld_x, ld_
 							xEdge, yEdge, addressOut, colOut);
 
 	//contants; depend on image size and colour res
-	parameter xSz = 8;
-	parameter ySz = 7;
+	parameter xSz = 3;
+	parameter ySz = 3;
 	parameter colSz = 3;
-	parameter addrSz = 15;
+	parameter addrSz = 6;
 	//these define the dimensions of the box
 	input[xSz-1:0] xLeft, xRight;
 	input[ySz-1:0] yTop, yBottom;
@@ -92,7 +92,7 @@ module cleanDataPath(xLeft, xRight, yTop, yBottom, countXEn, countYEn, ld_x, ld_
 	//has the y edge been reached?
 	assign yEdge = (yCount == yBottom);
 
-	vga_address_translator trans1(.x(xCount),.y(yCount),.mem_address(addressOut));
+	address_translator trans1(.x(xCount),.y(yCount),.mem_address(addressOut));
 	
 	
 endmodule
@@ -200,6 +200,27 @@ module cleanControl(input clk, xEdge, yEdge, goClean, output reg countXEn, count
 	
 endmodule
 
+module address_translator(x, y, mem_address);
+
+	input [2:0] x; 
+	input [2:0] y;	
+	output [5:0] mem_address;
+	
+	/* The basic formula is address = y*WIDTH + x;
+	 * For 320x240 resolution we can write 320 as (256 + 64). Memory address becomes
+	 * (y*256) + (y*64) + x;
+	 * This simplifies multiplication a simple shift and add operation.
+	 * A leading 0 bit is added to each operand to ensure that they are treated as unsigned
+	 * inputs. By default the use a '+' operator will generate a signed adder.
+	 * Similarly, for 160x120 resolution we write 160 as 128+32.
+	 */
+	 //width = 6 = 4 + 2
+	 //so address = (y*4) + (y*2) + x
+	 assign mem_address = ({1'b0, y, 2'd0} + {1'b0, y, 1'd0} + {1'b0, x});
+	
+
+endmodule
+
 /* This module converts a user specified coordinates into a memory address.
  * The output of the module depends on the resolution set by the user.
  */
@@ -235,3 +256,5 @@ module vga_address_translator(x, y, mem_address);
 			mem_address = res_160x120[14:0];
 	end
 endmodule
+
+   

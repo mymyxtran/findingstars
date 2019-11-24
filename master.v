@@ -1,47 +1,86 @@
 //this module combines topDataPath and state_machine1
-module master(input GO, clk, resetn, doneDraw, doneClean, topBottomFound, leftFound, rightFound, 
-	      output goDraw, goClean, goMapColumns, goMapRows, plotEn, output[14:0] addressOut);
+module master(xLeft, xRight, yTop, yBottom, GO, clk, resetn, doneDraw, doneClean, topBottomFound, leftFound, rightFound, 
+	      goDraw, goClean, goMapColumns, goMapRows, plotEn, xCount, yCount);
 
-	wire pLoad, countXEn, countYEn, wrEn, starFound, endOfImg;
+	localparam THRESHOLD = 0;
 	
-	assign wrEn = 1'b0;
+	parameter xSz = 3;
+	parameter ySz = 3;
+	parameter addrSz = 6;
+	parameter colSz = 3;
+
+	input GO, clk, resetn, doneDraw, doneClean, topBottomFound, leftFound, rightFound;
 	
-	topDataPath topDP(.pLoad(pLoad), .countXEn(countXEn), .countYEn(countYEn),  
-			  .clk(clk), .resetn(resetn), .wrEn(wrEn), .addressOut(addressOut), .endOfImg(endOfImg));
-							
+	input[xSz-1:0] xRight, xLeft;
+	input[ySz-1:0] yTop, yBottom;
+
+	output[xSz-1:0] xCount;
+	output[ySz-1:0] yCount;
+
+	//goes to findTB, findLR, draw
+	output goDraw, goClean, goMapColumns, goMapRows, plotEn;
 	
-	state_machine1 fsm1(.resetn(resetn), .clk(clk), .starFound(starFound), .endOfImg(endOfImg),
+	//wires btw master dp and control
+	wire pLoad, countXEn, countYEn, endOfImg;
+	
+	//wires from clean to master control/dp and vice versa
+	wire wrEn, starFound;
+
+	wire[colSz-1:0] pixVal;
+
+	
+	wire[addrSz-1:0] finalAddress;
+	wire[addrSz-1:0] addressRead;
+	wire[addrSz-1:0] addressWrite;
+
+	wire[colSz-1:0] colIn;
+	
+	
+	topDataPath topDP(.countXEn(countXEn), .countYEn(countYEn),  
+			  .clk(clk), .resetn(resetn), .addressOut(addressRead), .endOfImg(endOfImg), .xCount(xCount), .yCount(yCount));
+
+	
+
+	state_machine1 fsm1(.GO(GO),.resetn(resetn), .clk(clk), .starFound(starFound), .endOfImg(endOfImg),
 							  .doneDraw(doneDraw), .doneClean(doneClean), .topBottomFound(topBottomFound),
 								.leftFound(leftFound), .rightFound(rightFound), .ld_count(pLoad), .countXEn(countXEn), .countYEn(countYEn), .plotEn(plotEn), 
 								.goDraw(goDraw), .goMapRows(goMapRows), .goMapColumns(goMapColumns), .goClean(goClean));
+	
+	clean_star cleanModule(.goClean(goClean), .xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom), .clk(clk),
+			       .addressOut(addressWrite), .colOut(colIn), .doneClean(doneClean), .wrEn(wrEn));
 
+	ram36x3_1 imageMem(.q(pixVal), .address(finalAddress), .data(pixVal), .clock(clk), .wren(wrEn));
+	
+						
+	assign starFound = pixVal > THRESHOLD;
+	
+	//addressRead comes from top-level fsm, addressWrite comes from clean module
+	assign finalAddress = (wrEn) ? addressWrite : addressRead; 
+							
+	
+	
 endmodule
 
 
-module topDataPath(pLoad, countXEn, countYEn, clk, resetn, endOfImg, addressOut, xCount, yCount);
+module topDataPath(countXEn, countYEn, clk, resetn, endOfImg, addressOut, xCount, yCount);
 
-		parameter xSz = 8;
-		parameter ySz = 7;
-		parameter addrSz = 15;
+		parameter xSz = 3;
+		parameter ySz = 3;
+		parameter addrSz = 6;
 		parameter colSz = 3;
 		
-		localparam MAX_X = 8'd160;//max X size is 160 pixels
-		localparam MAX_Y = 7'd120;
+		localparam MAX_X = 3'd6;//max X size is 160 pixels
+		localparam MAX_Y = 3'd6;
 		
-		//set the threshold for pixel value
-		localparam THRESHOLD = 0;
 		
 		input clk, resetn;
 		
 		
-		input pLoad;//parallel load counters
 		input countXEn, countYEn; //enable for counters
 		
 		
-		output starFound;//1 if star is found, 0 if not
 		output endOfImg;//have all pixels been visited?
 		
-		//output reg xMax; //has end of row been reached?
 		
 		output reg[xSz-1:0] xCount;//output wires for counters
 		output reg[ySz-1:0] yCount;
@@ -54,10 +93,6 @@ module topDataPath(pLoad, countXEn, countYEn, clk, resetn, endOfImg, addressOut,
 			if(!resetn) begin
 				xCount <= 0;
 				yCount <= 0;
-			end
-			else if(pLoad) begin
-				xCount <= xIn;
-				yCount <= yIn;
 			end
 			else if(xCount == MAX_X-1) begin//reset count to avoid accessing undefined mem and enable for Y count
 				xCount <= 0;
@@ -74,12 +109,12 @@ module topDataPath(pLoad, countXEn, countYEn, clk, resetn, endOfImg, addressOut,
 		
 				
 		//instantiate address translator
-		vga_address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
+		address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
 		
 
 endmodule
 
-module state_machine1(input resetn, clk, GO, starFound, endOfImg, topBottomFound, leftFound, rightFound, xMax, doneDraw, doneClean,
+module state_machine1(input resetn, clk, GO, starFound, endOfImg, topBottomFound, leftFound, rightFound, doneDraw, doneClean,
 								output reg ld_count, countXEn, countYEn, plotEn, output goMapRows, goMapColumns, goDraw, goClean);
 
 	reg [3:0] current_state, next_state; 
@@ -106,8 +141,8 @@ module state_machine1(input resetn, clk, GO, starFound, endOfImg, topBottomFound
 	always@(*)
 	begin: state_table
 		case(current_state)
-			RESET: next_state = WAIT_FOR_START;
-			WAIT_FOR_START: next_state = (GO) ? CHECK_COUNT : WAIT_FOR_START;
+			RESET: next_state = CHECK_COUNT;
+			//WAIT_FOR_START: next_state = (GO) ? CHECK_COUNT : WAIT_FOR_START;
 			CHECK_COUNT: next_state = (endOfImg) ? END_OF_IMG : CHECK_PIX;
 			CHECK_PIX: next_state = (starFound) ? MAP_TOP_BOT : INCR_X;
 			INCR_X: next_state = CHECK_COUNT;
@@ -121,7 +156,7 @@ module state_machine1(input resetn, clk, GO, starFound, endOfImg, topBottomFound
 				else//keep cleaning until done!
 					next_state = CLEAN_STAR;
 			end
-			END_OF_IMG: next_state = WAIT_FOR_START;
+			//END_OF_IMG: next_state = WAIT_FOR_START;
 			default: next_state = CHECK_COUNT;
 		
 		endcase
@@ -201,6 +236,30 @@ endmodule
 /* This module converts a user specified coordinates into a memory address.
  * The output of the module depends on the resolution set by the user.
  */
+module address_translator(x, y, mem_address);
+
+	input [2:0] x; 
+	input [2:0] y;	
+	output [5:0] mem_address;
+	
+	/* The basic formula is address = y*WIDTH + x;
+	 * For 320x240 resolution we can write 320 as (256 + 64). Memory address becomes
+	 * (y*256) + (y*64) + x;
+	 * This simplifies multiplication a simple shift and add operation.
+	 * A leading 0 bit is added to each operand to ensure that they are treated as unsigned
+	 * inputs. By default the use a '+' operator will generate a signed adder.
+	 * Similarly, for 160x120 resolution we write 160 as 128+32.
+	 */
+	 //width = 6 = 4 + 2
+	 //so address = (y*4) + (y*2) + x
+	 assign mem_address = ({1'b0, y, 2'd0} + {1'b0, y, 1'd0} + {1'b0, x});
+	
+
+endmodule
+
+/* This module converts a user specified coordinates into a memory address.
+ * The output of the module depends on the resolution set by the user.
+ */
 module vga_address_translator(x, y, mem_address);
 
 	parameter RESOLUTION = "160x120";
@@ -233,4 +292,3 @@ module vga_address_translator(x, y, mem_address);
 			mem_address = res_160x120[14:0];
 	end
 endmodule
-
