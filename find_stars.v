@@ -76,13 +76,13 @@ module find_stars
 			       .addressOut(addressWrite), .colOut(colIn), .doneClean(doneClean), .wrEn(wrEn));
 	
 	
-	/* > starFound COMING FROM state_machine1
+	/* > goMapRows COMING FROM state_machine1
 	 * xIn, YiN is wire COMING from topDataPath.v 
 	 * > yTop, yBottom and topBottomFound are wires GOING to mapLeftandRight.v */
 	mapTopandBottomFound map_TB( .clk(CLOCK_50), .starFound(goMapRows), .xIn(xIn), .yIn(yIn), .mostBottom(yBottom), .mostTop(yTop), .midPix(midPix), .TopandBottomFound(topBottomFound) ); 
 	
 	/* > yTop, yBottom and midPix are wires COMING from mapTopandBottom.v
-	*  > goMapColumns is a start signal from fsm1
+	*  > goMapColumns is a start signal from state_machine1
 	 * > mostLeft, mostRight, rightFound, leftFound are wire GOING to clean/draw.v */ 
 	mapLeftandRight map_LR( .clk(CLOCK_50), .TopandBottomFound(goMapColumns), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) , .mostRight(xRight) ,  .mostLeft(xLeft) ,  .rightFound(rightFound) , .leftFound(leftFound) );
 
