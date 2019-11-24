@@ -2,8 +2,6 @@
  * top-level module << test >> which enables finding the left and right edge of a shape to 
  * happen at the same time. */
 
-/* Note: The TopandBottomFound signal needs to go high then low, to start the fsm initally... So that it knows what state to be in first.
- *       Or is this unnecessary? */
 module mapLeftandRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostRight,  mostLeft,  rightFound, leftFound);
 	
 	parameter xSz = 6;
