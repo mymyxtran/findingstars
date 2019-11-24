@@ -12,8 +12,8 @@
 
 module mapLeftandRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostRight,  mostLeft,  rightFound, leftFound);
 	
-	parameter xSz = 6;
-	parameter ySz = 6;
+	parameter xSz = 8;
+	parameter ySz = 7;
 
 	input clk, TopandBottomFound;
 	input [ySz-1:0]mostTop;
@@ -109,13 +109,13 @@ module find_Right(
 		);  
 	
 	// Depends on image size 
-	parameter xSz = 6;
-	parameter ySz = 6;
-	parameter addrSz = 12;
+	parameter xSz = 8;
+	parameter ySz = 7;
+	parameter addrSz = 15;
 	parameter colSz = 3;
 
 	// Size of Image 
-	parameter x_resolution = 6'd60;
+	parameter x_resolution = 8'd160;
 
 	// set the threshold for pixel value
 	localparam THRESHOLD = 0;
@@ -322,9 +322,9 @@ module find_Left(
 		mostLeft
 		);  
 
-	parameter xSz = 6;
-	parameter ySz = 6;
-	parameter addrSz = 12;
+	parameter xSz = 8;
+	parameter ySz = 7;
+	parameter addrSz = 15;
 	parameter colSz = 3;
 
 	//set the threshold for pixel value
