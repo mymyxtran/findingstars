@@ -28,7 +28,8 @@ module find_stars
 	// Create an Instance of a VGA controller - there can be only one!
 	// Define the number of colours as well as the initial background
 	// image file (.MIF) for the controller.
-	vga_adapter vga0(.resetn(KEY[0]), .clock(CLOCK_50),.VGA_R(VGA_R), .VGA_G(VGA_G), .VGA_B(VGA_B), .VGA_HS(VGA_HS), .VGA_VS(VGA_VS), .VGA_BLANK(VGA_BLANK_N), .VGA_SYNC(VGA_SYNC_N), .VGA_CLK(VGA_CLK));
+	vga_adapter vga0(.resetn(KEY[0]), .clock(CLOCK_50), .x(x_for_vga), .y(y_for_vga), .plot(plotEn), .col(col_for_vga),
+							.VGA_R(VGA_R), .VGA_G(VGA_G), .VGA_B(VGA_B), .VGA_HS(VGA_HS), .VGA_VS(VGA_VS), .VGA_BLANK(VGA_BLANK_N), .VGA_SYNC(VGA_SYNC_N), .VGA_CLK(VGA_CLK));
 	 
 		defparam vga0.RESOLUTION = "160x120";
 		defparam vga0.MONOCHROME = "FALSE";
@@ -55,29 +56,17 @@ module find_stars
 	wire[xSz-1:0] xLeft, xRight;
 	wire[ySz-1:0] yTop, yBottom;
 	
-	localparam THRESHOLD = 0;
+	//connections for going from draw_box to vga_adapter
+	wire[xSz-1:0] x_for_vga;
+	wire[ySz-1:0] y_for_vga;
+	wire[colSz-1:0] col_for_vga;
+	wire plotEn;
 	
-	topDataPath topDP(.pLoad(pLoad), .countXEn(countXEn), .countYEn(countYEn),  
-			  .clk(CLOCK_50), .resetn(resetn), .wrEn(wrEn), .addressOut(addressRead), .endOfImg(endOfImg),
-			  .xCount(xIn), .yCount(yIn));
-	
-	ram19200x3_c imageMem(.q(pixVal), .data(colIn), .address(finalAddress), .clock(CLOCK_50), .wren(wrEn));
-						
-	assign starFound = pixVal > THRESHOLD;
-	
-	//addressRead comes from top-level fsm, addressWrite comes from clean module
-	assign finalAddress = (wrEn) ? addressWrite : addressRead; 
-	
-	state_machine1 fsm1(.resetn(resetn), .clk(CLOCK_50), .starFound(starFound), .endOfImg(endOfImg),
-			    				// input signals from other modules
-							  .doneDraw(doneDraw), .doneClean(doneClean), .topBottomFound(topBottomFound),
-								.leftFound(leftFound), .rightFound(rightFound), .ld_count(pLoad), .countXEn(countXEn), .countYEn(countYEn), .plotEn(plotEn), 
-									// output signals
-			  						  .goDraw(goDraw), .goMapRows(goMapRows), .goMapColumns(goMapColumns), .goClean(goClean) );
-		
-	clean_star cleanModule(.goClean(goClean), .xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom), .clk(CLOCK_50),
-			       .addressOut(addressWrite), .colOut(colIn), .doneClean(doneClean), .wrEn(wrEn));
-	
+	master yes_master(.xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom),
+			 .GO(GO), .clk(CLOCK_50), .resetn(KEY[0]), .doneDraw(doneDraw), .doneClean(doneClean), topBottomFound(topBottomFound),
+			 .leftFound(leftFound), .rightFound(rightFound), .goDraw(goDraw), .goClean(goClean), 
+			 .goMapColumns(goMapColumns), .goMapRows(goMapRows), .plotEn(plotEn), .xCount(xCount), .yCount(yCount));
+
 	
 	/* > goMapRows COMING FROM state_machine1
 	 * xIn, YiN is wire COMING from topDataPath.v 
@@ -89,6 +78,10 @@ module find_stars
 	 * > mostLeft, mostRight, rightFound, leftFound are wire GOING to clean/draw.v */ 
 	mapLeftandRight map_LR( .clk(CLOCK_50), .TopandBottomFound(goMapColumns), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) , .mostRight(xRight) ,  .mostLeft(xLeft) ,  .rightFound(rightFound) , .leftFound(leftFound) );
 
+	draw_box drawTime(.goDraw(goDraw), .xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom), 
+						.clk(CLOCK_50), .xOut(x_for_vga), .yOut(y_for_vga), .colOut(col_for_vga), .doneDraw(doneDraw), .plotEn(plotEn));
+
+	
 endmodule
 
 /* This module converts a user specified coordinates into a memory address.
@@ -126,4 +119,3 @@ module vga_address_translator(x, y, mem_address);
 			mem_address = res_160x120[14:0];
 	end
 endmodule
-
