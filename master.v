@@ -4,9 +4,9 @@ module master(xLeft, xRight, yTop, yBottom, GO, clk, resetn, doneDraw, doneClean
 
 	localparam THRESHOLD = 0;
 	
-	parameter xSz = 3;
-	parameter ySz = 3;
-	parameter addrSz = 6;
+	parameter xSz = 8;
+	parameter ySz = 7;
+	parameter addrSz = 15;
 	parameter colSz = 3;
 
 	input GO, clk, resetn, doneDraw, doneClean, topBottomFound, leftFound, rightFound;
@@ -49,7 +49,7 @@ module master(xLeft, xRight, yTop, yBottom, GO, clk, resetn, doneDraw, doneClean
 	clean_star cleanModule(.goClean(goClean), .xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom), .clk(clk),
 			       .addressOut(addressWrite), .colOut(colIn), .doneClean(doneClean), .wrEn(wrEn));
 
-	ram36x3_1 imageMem(.q(pixVal), .address(finalAddress), .data(pixVal), .clock(clk), .wren(wrEn));
+	ram19200x3_c imageMem(.q(pixVal), .address(finalAddress), .data(pixVal), .clock(clk), .wren(wrEn));
 	
 						
 	assign starFound = pixVal > THRESHOLD;
@@ -64,13 +64,13 @@ endmodule
 
 module topDataPath(countXEn, countYEn, clk, resetn, endOfImg, addressOut, xCount, yCount);
 
-		parameter xSz = 3;
-		parameter ySz = 3;
-		parameter addrSz = 6;
+		parameter xSz = 8;
+		parameter ySz = 7;
+		parameter addrSz = 15;
 		parameter colSz = 3;
 		
-		localparam MAX_X = 3'd6;//max X size is 160 pixels
-		localparam MAX_Y = 3'd6;
+		localparam MAX_X = 8'd160;//max X size is 160 pixels
+		localparam MAX_Y = 7'd120;
 		
 		
 		input clk, resetn;
@@ -109,7 +109,7 @@ module topDataPath(countXEn, countYEn, clk, resetn, endOfImg, addressOut, xCount
 		
 				
 		//instantiate address translator
-		address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
+		vga_address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
 		
 
 endmodule
