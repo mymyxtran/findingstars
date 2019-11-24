@@ -1,4 +1,10 @@
-module mapTopandBottomFound( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound);
+/* 
+	> need clock
+	> starfound, xIn, YiN is wire COMING from find_star.v 
+	> mostTop, mostBottom and TopandBottomFound are wires GOING to mapLeftandRight.v
+	mapTopandBottomFound map_TB( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound); 
+*/
+module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound);
 				
 	parameter xSz = 6;
 	parameter ySz = 6;
