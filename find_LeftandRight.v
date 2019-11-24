@@ -414,9 +414,9 @@ module control_Left(
 		countXEn,
 		countYEn,
 		resetn,
-		leftFound
+		output leftFound
 		);
-		
+reg leftFound_DL, leftFound_s;		
 reg [3:0] current_state, next_state;
 
 localparam		TOPANDBOTTOMFOUND = 4'd0,
@@ -463,7 +463,7 @@ begin: enable_signals
 	countXEn = 1'b0;
 	countYEn = 1'b0;
 	resetn = 1'b1;
-	leftFound =1'b0;
+	leftFound_s =1'b0;
 	
 	case(current_state)
 		TOPANDBOTTOMFOUND: begin
@@ -483,7 +483,7 @@ begin: enable_signals
 			countYEn = 1'b1;
 		end
 		LEFTFOUND: begin
-			leftFound = 1'b1;
+			leftFound_s = 1'b1;
 		end
 	
 	endcase
@@ -498,6 +498,17 @@ always@(posedge clk) begin
 		current_state <= next_state;
 end
 
+assign leftFound = (!leftFound_DL) && (leftFound_s);
+
+always@(posedge clk) begin
+	if(rightFound_s) begin
+		leftFound_DL <= 1'b1;
+	end
+	else begin
+		leftFound_DL <= 1'b0;
+	end
+end
+	
 endmodule
 
 module address_translator(x, y, mem_address);
