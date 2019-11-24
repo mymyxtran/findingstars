@@ -3,8 +3,8 @@
 module clean_star(goClean, xLeft, xRight, yTop, yBottom, clk, xOut, yOut, colOut, doneClean, wrEn);
 
 	//contants; depend on image size and colour res
-	parameter xSz = 3;
-	parameter ySz = 3;
+	parameter xSz = 8;
+	parameter ySz = 7;
 	parameter colSz = 3;
 	
 	//these define the dimensions of the box
@@ -38,8 +38,8 @@ module cleanDataPath(xLeft, xRight, yTop, yBottom, countXEn, countYEn, ld_x, ld_
 							xEdge, yEdge, xOut, yOut, colOut);
 
 	//contants; depend on image size and colour res
-	parameter xSz = 3;
-	parameter ySz = 3;
+	parameter xSz = 8;
+	parameter ySz = 7;
 	parameter colSz = 3;
 	
 	//these define the dimensions of the box
