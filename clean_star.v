@@ -3,10 +3,10 @@
 module clean_star(goClean, xLeft, xRight, yTop, yBottom, clk, addressOut, colOut, doneClean, wrEn);
 
 	//contants; depend on image size and colour res
-	parameter xSz = 3;
-	parameter ySz = 3;
+	parameter xSz = 8;
+	parameter ySz = 7;
 	parameter colSz = 3;
-	parameter addrSz = 6;
+	parameter addrSz = 15;
 	
 	//these define the dimensions of the box
 	input[xSz-1:0] xLeft, xRight;
@@ -38,10 +38,10 @@ module cleanDataPath(xLeft, xRight, yTop, yBottom, countXEn, countYEn, ld_x, ld_
 							xEdge, yEdge, addressOut, colOut);
 
 	//contants; depend on image size and colour res
-	parameter xSz = 3;
-	parameter ySz = 3;
+	parameter xSz = 8;
+	parameter ySz = 7;
 	parameter colSz = 3;
-	parameter addrSz = 6;
+	parameter addrSz = 15;
 	//these define the dimensions of the box
 	input[xSz-1:0] xLeft, xRight;
 	input[ySz-1:0] yTop, yBottom;
@@ -92,7 +92,7 @@ module cleanDataPath(xLeft, xRight, yTop, yBottom, countXEn, countYEn, ld_x, ld_
 	//has the y edge been reached?
 	assign yEdge = (yCount == yBottom);
 
-	address_translator trans1(.x(xCount),.y(yCount),.mem_address(addressOut));
+	vga_address_translator trans1(.x(xCount),.y(yCount),.mem_address(addressOut));
 	
 	
 endmodule
@@ -104,7 +104,7 @@ module cleanControl(input clk, xEdge, yEdge, goClean, output reg countXEn, count
    
 	reg doneClean_s, doneClean_DL;//for pulsing
 	
-   localparam   START_CLEAN = 4'd0,
+   	localparam   			 START_CLEAN = 4'd0,
 					 STORE_Y = 4'd1,
 					 STORE_X  = 4'd2,
 					 INCR_X = 4'd3,
