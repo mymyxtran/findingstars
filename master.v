@@ -1,13 +1,13 @@
 //this module combines topDataPath and state_machine1
-module master(input[2:0] xIn, yIn, input GO, clk, resetn, doneDraw, doneClean, topBottomFound, leftFound, rightFound, output goDraw, goClean,
-				goMapColumns, goMapRows, plotEn);
+module master(input GO, clk, resetn, doneDraw, doneClean, topBottomFound, leftFound, rightFound, 
+	      output goDraw, goClean, goMapColumns, goMapRows, plotEn, output[14:0] addressOut);
 
 	wire pLoad, countXEn, countYEn, wrEn, starFound, endOfImg;
 	
 	assign wrEn = 1'b0;
 	
-	topDataPath topDP(.pLoad(pLoad), .xIn(xIn), .yIn(yIn), .countXEn(countXEn), .countYEn(countYEn),  
-							.clk(clk), .resetn(resetn), .wrEn(wrEn), .starFound(starFound), .endOfImg(endOfImg));
+	topDataPath topDP(.pLoad(pLoad), .countXEn(countXEn), .countYEn(countYEn),  
+			  .clk(clk), .resetn(resetn), .wrEn(wrEn), .addressOut(addressOut), .endOfImg(endOfImg));
 							
 	
 	state_machine1 fsm1(.resetn(resetn), .clk(clk), .starFound(starFound), .endOfImg(endOfImg),
@@ -18,31 +18,25 @@ module master(input[2:0] xIn, yIn, input GO, clk, resetn, doneDraw, doneClean, t
 endmodule
 
 
-module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, clk, resetn, wrEn, starFound, endOfImg);
+module topDataPath(pLoad, countXEn, countYEn, clk, resetn, endOfImg, addressOut);
 
-		parameter xSz = 3;
-		parameter ySz = 3;
-		parameter addrSz = 6;
+		parameter xSz = 8;
+		parameter ySz = 7;
+		parameter addrSz = 15;
 		parameter colSz = 3;
 		
-		localparam MAX_X = 3'd6;//max X size is 6 pixels
-		localparam MAX_Y = 3'd6;
+		localparam MAX_X = 8'd160;//max X size is 160 pixels
+		localparam MAX_Y = 7'd120;
 		
 		//set the threshold for pixel value
 		localparam THRESHOLD = 0;
 		
 		input clk, resetn;
 		
-		//write to memory if required (to blot out white pixels we've already checked)
-		input wrEn;
 		
 		input pLoad;//parallel load counters
 		input countXEn, countYEn; //enable for counters
 		
-		
-		//input x and y coor to load counters if required
-		input[xSz-1:0] xIn;
-		input[ySz-1:0] yIn;
 		
 		output starFound;//1 if star is found, 0 if not
 		output endOfImg;//have all pixels been visited?
@@ -52,13 +46,8 @@ module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, clk, resetn, wrEn, starF
 		reg[xSz-1:0] xCount;//output wires for counters
 		reg[ySz-1:0] yCount;
 		
-		wire[addrSz-1:0] addressOut;//address wire from translator
+		output[addrSz-1:0] addressOut;//address wire from translator
 		
-		wire[colSz-1:0] writeCol;//colour to write
-		
-		assign writeCol = 0;
-		
-		wire[colSz-1:0] pixVal;
 		
 		//instantiate the x/y counters
 		always@(posedge clk) begin
@@ -85,12 +74,8 @@ module topDataPath(pLoad, xIn, yIn, countXEn, countYEn, clk, resetn, wrEn, starF
 		
 				
 		//instantiate address translator
-		address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
+		vga_address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
 		
-		//instantiate mem block
-		ram36x3_1 ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(wrEn), .data(writeCol));
-		
-		assign starFound = (pixVal > THRESHOLD);
 
 endmodule
 
@@ -216,11 +201,18 @@ endmodule
 /* This module converts a user specified coordinates into a memory address.
  * The output of the module depends on the resolution set by the user.
  */
-module address_translator(x, y, mem_address);
+module vga_address_translator(x, y, mem_address);
 
-	input [2:0] x; 
-	input [2:0] y;	
-	output [5:0] mem_address;
+	parameter RESOLUTION = "160x120";
+	/* Set this parameter to "160x120" or "320x240". It will cause the VGA adapter to draw each dot on
+	 * the screen by using a block of 4x4 pixels ("160x120" resolution) or 2x2 pixels ("320x240" resolution).
+	 * It effectively reduces the screen resolution to an integer fraction of 640x480. It was necessary
+	 * to reduce the resolution for the Video Memory to fit within the on-chip memory limits.
+	 */
+
+	input [((RESOLUTION == "320x240") ? (8) : (7)):0] x; 
+	input [((RESOLUTION == "320x240") ? (7) : (6)):0] y;	
+	output reg [((RESOLUTION == "320x240") ? (16) : (14)):0] mem_address;
 	
 	/* The basic formula is address = y*WIDTH + x;
 	 * For 320x240 resolution we can write 320 as (256 + 64). Memory address becomes
@@ -230,11 +222,15 @@ module address_translator(x, y, mem_address);
 	 * inputs. By default the use a '+' operator will generate a signed adder.
 	 * Similarly, for 160x120 resolution we write 160 as 128+32.
 	 */
-	 //width = 6 = 4 + 2
-	 //so address = (y*4) + (y*2) + x
-	 assign mem_address = ({1'b0, y, 2'd0} + {1'b0, y, 1'd0} + {1'b0, x});
+	wire [16:0] res_320x240 = ({1'b0, y, 8'd0} + {1'b0, y, 6'd0} + {1'b0, x});
+	wire [15:0] res_160x120 = ({1'b0, y, 7'd0} + {1'b0, y, 5'd0} + {1'b0, x});
 	
-
+	always @(*)
+	begin
+		if (RESOLUTION == "320x240")
+			mem_address = res_320x240;
+		else
+			mem_address = res_160x120[14:0];
+	end
 endmodule
-
 
