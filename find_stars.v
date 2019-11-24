@@ -35,6 +35,9 @@ module find_stars
 		defparam vga0.BITS_PER_COLOUR_CHANNEL = 1;
 		defparam vga0.BACKGROUND_IMAGE = "oneStar160x120.mif";
 	
+	parameter xSz = 8;
+	parameter ySz = 7;
+	
 	wire starFound;
 	wire[3:0] pixVal;
 	wire wrEn;
