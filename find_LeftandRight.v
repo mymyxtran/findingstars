@@ -2,6 +2,14 @@
  * top-level module << test >> which enables finding the left and right edge of a shape to 
  * happen at the same time. */
 
+/* 
+	> need clock
+	> external reset 
+	> mostTop, mostBottom and TopandBottomFound are wires COMING from mapTopandBottom.v
+	> mostLeft, mostRight, rightFound, leftFound are wire GOING to clean/draw.v 
+	mapTopandBottomFound map_TB( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound); 
+*/
+
 module mapLeftandRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostRight,  mostLeft,  rightFound, leftFound);
 	
 	parameter xSz = 6;
