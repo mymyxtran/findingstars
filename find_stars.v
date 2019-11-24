@@ -38,24 +38,53 @@ module find_stars
 	wire starFound;
 	wire[3:0] pixVal;
 	wire wrEn;
+	wire[14:0] finalAddress;
+	wire[14:0] addressRead;
+	wire[14:0] addressWrite;
+	wire[3:0] colIn;
+	
+	wire doneClean, goClean;
+	wire doneDraw, goDraw;
+	wire goMapRows, topBottomFound;
+	wire goMapColumns, leftFound, rightFound;
+	
+	wire [xSz-1:0]xIn, [ySz-1:0] yIn, [xSz-1:0] midPix; 
+	wire[xSz-1:0] xLeft, xRight;
+	wire[ySz-1:0] yTop, yBottom;
 	
 	localparam THRESHOLD = 0;
 	
 	topDataPath topDP(.pLoad(pLoad), .countXEn(countXEn), .countYEn(countYEn),  
-			  .clk(clk), .resetn(resetn), .wrEn(wrEn), .addressOut(addressOut), .endOfImg(endOfImg));
+			  .clk(CLOCK_50), .resetn(resetn), .wrEn(wrEn), .addressOut(addressRead), .endOfImg(endOfImg),
+			  .xCount(xIn), .yCount(yIn));
 	
-	ram19200x3_c imageMem(.q(pixVal), .address(address_out), .clock(CLOCK_50), .wren(wrEn));
+	ram19200x3_c imageMem(.q(pixVal), .data(colIn), .address(finalAddress), .clock(CLOCK_50), .wren(wrEn));
 						
 	assign starFound = pixVal > THRESHOLD;
 	
+	//addressRead comes from top-level fsm, addressWrite comes from clean module
+	assign finalAddress = (wrEn) ? addressWrite : addressRead; 
 	
-	state_machine1 fsm1(.resetn(resetn), .clk(clk), .starFound(starFound), .endOfImg(endOfImg),
+	state_machine1 fsm1(.resetn(resetn), .clk(CLOCK_50), .starFound(starFound), .endOfImg(endOfImg),
+			    				// input signals from other modules
 							  .doneDraw(doneDraw), .doneClean(doneClean), .topBottomFound(topBottomFound),
 								.leftFound(leftFound), .rightFound(rightFound), .ld_count(pLoad), .countXEn(countXEn), .countYEn(countYEn), .plotEn(plotEn), 
-								.goDraw(goDraw), .goMapRows(goMapRows), .goMapColumns(goMapColumns), .goClean(goClean));
-
-			
+									// output signals
+			  						  .goDraw(goDraw), .goMapRows(goMapRows), .goMapColumns(goMapColumns), .goClean(goClean) );
 		
+	clean_star cleanModule(.goClean(goClean), .xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom), .clk(CLOCK_50),
+			       .addressOut(addressWrite), .colOut(colIn), .doneClean(doneClean), .wrEn(wrEn));
+	
+	
+	/* > starFound COMING FROM state_machine1
+	 * xIn, YiN is wire COMING from topDataPath.v 
+	 * > yTop, yBottom and topBottomFound are wires GOING to mapLeftandRight.v */
+	mapTopandBottomFound map_TB( .clk(CLOCK_50), .starFound(goMapRows), .xIn(xIn), .yIn(yIn), .mostBottom(yBottom), .mostTop(yTop), .midPix(midPix), .TopandBottomFound(topBottomFound) ); 
+	
+	/* > yTop, yBottom and midPix are wires COMING from mapTopandBottom.v
+	*  > goMapColumns is a start signal from fsm1
+	 * > mostLeft, mostRight, rightFound, leftFound are wire GOING to clean/draw.v */ 
+	mapLeftandRight map_LR( .clk(CLOCK_50), .TopandBottomFound(goMapColumns), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) , .mostRight(xRight) ,  .mostLeft(xLeft) ,  .rightFound(rightFound) , .leftFound(leftFound) );
 
 endmodule
 
