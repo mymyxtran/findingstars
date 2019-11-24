@@ -4,7 +4,7 @@
 	> mostTop, mostBottom and TopandBottomFound are wires GOING to mapLeftandRight.v
 	mapTopandBottomFound map_TB( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound); 
 */
-module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound);
+module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound, midPix);
 				
 	parameter xSz = 8;
 	parameter ySz = 7;
@@ -15,10 +15,10 @@ module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBot
 	output [ySz-1:0] mostBottom;
 	output [ySz-1:0] mostTop;
 	output TopandBottomFound;
-		
+	outputs [xSz-1:0]midPix;	
+	
 	wire resetn, countXEn, countYEn, pLoad, rightEdgeReached, bottomEdgeReached; 
-	wire [xSz-1:0]midPix;
-		
+			
 	findTopandBottom u1(	 	//inputs
 									.clk(clk), 
 									.resetn(resetn),
