@@ -15,7 +15,7 @@ module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBot
 	output [ySz-1:0] mostBottom;
 	output [ySz-1:0] mostTop;
 	output TopandBottomFound;
-	outputs [xSz-1:0]midPix;	
+	output [xSz-1:0]midPix;	
 	
 	wire resetn, countXEn, countYEn, pLoad, rightEdgeReached, bottomEdgeReached; 
 			
