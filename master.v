@@ -18,7 +18,7 @@ module master(input GO, clk, resetn, doneDraw, doneClean, topBottomFound, leftFo
 endmodule
 
 
-module topDataPath(pLoad, countXEn, countYEn, clk, resetn, endOfImg, addressOut);
+module topDataPath(pLoad, countXEn, countYEn, clk, resetn, endOfImg, addressOut, xCount, yCount);
 
 		parameter xSz = 8;
 		parameter ySz = 7;
@@ -43,8 +43,8 @@ module topDataPath(pLoad, countXEn, countYEn, clk, resetn, endOfImg, addressOut)
 		
 		//output reg xMax; //has end of row been reached?
 		
-		reg[xSz-1:0] xCount;//output wires for counters
-		reg[ySz-1:0] yCount;
+		output reg[xSz-1:0] xCount;//output wires for counters
+		output reg[ySz-1:0] yCount;
 		
 		output[addrSz-1:0] addressOut;//address wire from translator
 		
