@@ -101,8 +101,8 @@ module findTopandBottom(
 
 	reg[xSz-1:0] xCount;//output wires for counters
 	reg[ySz-1:0] yCount;
-	reg[xSz-1:0] xOriginal; // store inital x value to calculate midpix
-	reg[ySz-1:0] yOriginal; // store inital y value to have top most
+		  reg[xSz-1:0] xOriginal; // store inital x value to calculate midpix
+	reg[xSz-1:0] yOriginal; // store inital y value to have top most
 
 	wire[addrSz-1:0] addressOut;//address wire from translator
 	wire[addrSz-1:0] addressOut_1;
@@ -143,16 +143,16 @@ module findTopandBottom(
 	
 	// use trans0 and ram0 for access to xCount pixval
 	//instantiate address translator // input your x,y coordinates // output is the address you want to access
-	vga_address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
+	address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
 	//instantiate mem block
-	ram19200x3_c ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
+	ram3600x3_sq ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	. // Edge-case, the end (right-end) of the screen is reached
 	assign rightEdgeReached = (pixVal == THRESHOLD) || (xCount == x_resolution); // This signal indicates when to start mostBottom traversal. 
 	
 	
 	// use trans1 and ram1 for to find bottom and top most
-	vga_address_translator trans1(.x(midPix), .y(yCount), .mem_address(addressOut_1));
-	ram19200x3_c ram1(.address(addressOut_1),.q(pixVal_1), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
+	address_translator trans1(.x(midPix), .y(yCount), .mem_address(addressOut_1));
+	ram3600x3_sq ram1(.address(addressOut_1),.q(pixVal_1), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
 	
 	// This signal stop datapath, since all calculations are complete.
 	assign bottomEdgeReached = ((pixVal_1 == THRESHOLD) || (mostBottom == y_resolution)); // Edge-case, the end (bottom) of the screen is reached. 
@@ -256,6 +256,40 @@ end
 
 endmodule
 
+/* This module converts a user specified coordinates into a memory address.
+ * The output of the module depends on the resolution set by the user.
+ */
+module vga_address_translator(x, y, mem_address);
 
+	parameter RESOLUTION = "160x120";
+	/* Set this parameter to "160x120" or "320x240". It will cause the VGA adapter to draw each dot on
+	 * the screen by using a block of 4x4 pixels ("160x120" resolution) or 2x2 pixels ("320x240" resolution).
+	 * It effectively reduces the screen resolution to an integer fraction of 640x480. It was necessary
+	 * to reduce the resolution for the Video Memory to fit within the on-chip memory limits.
+	 */
+
+	input [((RESOLUTION == "320x240") ? (8) : (7)):0] x; 
+	input [((RESOLUTION == "320x240") ? (7) : (6)):0] y;	
+	output reg [((RESOLUTION == "320x240") ? (16) : (14)):0] mem_address;
+	
+	/* The basic formula is address = y*WIDTH + x;
+	 * For 320x240 resolution we can write 320 as (256 + 64). Memory address becomes
+	 * (y*256) + (y*64) + x;
+	 * This simplifies multiplication a simple shift and add operation.
+	 * A leading 0 bit is added to each operand to ensure that they are treated as unsigned
+	 * inputs. By default the use a '+' operator will generate a signed adder.
+	 * Similarly, for 160x120 resolution we write 160 as 128+32.
+	 */
+	wire [16:0] res_320x240 = ({1'b0, y, 8'd0} + {1'b0, y, 6'd0} + {1'b0, x});
+	wire [15:0] res_160x120 = ({1'b0, y, 7'd0} + {1'b0, y, 5'd0} + {1'b0, x});
+	
+	always @(*)
+	begin
+		if (RESOLUTION == "320x240")
+			mem_address = res_320x240;
+		else
+			mem_address = res_160x120[14:0];
+	end
+endmodule
 
 
