@@ -134,7 +134,7 @@ module state_machine1(input resetn, clk, GO, starFound, endOfImg, topBottomFound
 					 INCR_X = 4'd3,
 					 MAP_TOP_BOT = 4'd5,
 					 MAP_L = 4'd6,
-					 MAP_R = 4'd12;
+					 MAP_R = 4'd12,
 					 DRAW_SQ = 4'd7,
 					 LOAD_COUNT = 4'd8,
 					 END_OF_IMG = 4'd9,
@@ -150,7 +150,7 @@ module state_machine1(input resetn, clk, GO, starFound, endOfImg, topBottomFound
 			CHECK_COUNT: next_state = (endOfImg) ? END_OF_IMG : CHECK_PIX;
 			CHECK_PIX: next_state = (starFound) ? MAP_TOP_BOT : INCR_X;
 			INCR_X: next_state = CHECK_COUNT;
-			MAP_TOP_BOT: next_state = (topBottomFound) ? MAP_L_R : MAP_TOP_BOT;
+			MAP_TOP_BOT: next_state = (topBottomFound) ? MAP_L : MAP_TOP_BOT;
 			MAP_L: next_state = (leftFound) ? MAP_R : MAP_L;
 			MAP_R: next_state = (rightFound) ? DRAW_SQ : MAP_R;
 			DRAW_SQ: next_state = (doneDraw) ? CLEAN_STAR : DRAW_SQ;
@@ -242,7 +242,9 @@ module state_machine1(input resetn, clk, GO, starFound, endOfImg, topBottomFound
 			goDraw_DL <= 0;
 			goClean_DL <= 0;
 		end
-	end
+end
+	
+	
 
 endmodule
 

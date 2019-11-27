@@ -58,11 +58,11 @@ module mapRight(clk, goMapColumnsR, mostTop, mostBottom, midPix, mostRight,  rig
 	
 endmodule
 
-module mapLeft(clk, TopandBottomFound,mostTop, mostBottom, midPix,  mostLeft, leftFound);
+module mapLeft(clk, goMapColumnsL, mostTop, mostBottom, midPix,  mostLeft, leftFound);
 	parameter xSz = 8;
 	parameter ySz = 7;
 
-	input clk, TopandBottomFound;
+	input clk, goMapColumnsL;
 	input [ySz-1:0]mostTop;
 	input [ySz-1:0]mostBottom;
 	input [xSz-1:0] midPix; // must be 1 larger 
@@ -93,7 +93,7 @@ wire L_ld_x, L_ld_y, L_countXEn, L_countYEn, leftEdgeReached, doneL, resetnL;	//
 				.leftEdgeReached(leftEdgeReached),
 				.doneL(doneL), 
 				.clk(clk), 
-				.TopandBottomFound(TopandBottomFound),
+				.goMapColumnsL(goMapColumnsL),
 		
 				// outputs
 				.ld_x(L_ld_x), 
@@ -439,20 +439,20 @@ module control_Left(
 reg leftFound_DL, leftFound_s;
 reg [3:0] current_state, next_state;
 
-localparam		GO_MAP_LEFT = 4'd0,
+localparam		GO_MAP_LEFT= 4'd0,
 			LoadIn = 4'd1,
 			INCREMENT_X = 4'd2,
 			CHECK_LEFT = 4'd3,
 			RELOAD_MIDPIX =4'd4,
 			INCREMENT_Y = 4'd5,
-			LEFTFOUND = 4'd6;
+			LEFTFOUND = 4'd6,
 			WAIT = 4'd7;
 
 always@(*)
 begin: state_table
 			
 	case(current_state)
-		WAIT: next_state = goMapColumnsR ? GO_MAP_LEFT : WAIT;
+		WAIT: next_state = WAIT;
 		
 		//Load in your top and bottom values
 		GO_MAP_LEFT: next_state = LoadIn;
@@ -514,6 +514,7 @@ begin: enable_signals
 end
 
 //current state registers
+
 always@(posedge clk) begin
 	if(goMapColumnsL)
 		current_state <= GO_MAP_LEFT;

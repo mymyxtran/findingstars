@@ -83,8 +83,8 @@ module find_stars
 	/* > yTop, yBottom and midPix are wires COMING from mapTopandBottom.v
 	*  > goMapColumns is a start signal from state_machine1
 	 * > mostLeft, mostRight, rightFound, leftFound are wire GOING to clean/draw.v */ 
-	mapRight map_R( .clk(CLOCK_50), .TopandBottomFound(goMapColumnsR), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) , .mostRight(xRight)  ,  .rightFound(rightFound) );
-	mapLeft map_L( .clk(CLOCK_50), .TopandBottomFound(goMapColumnsL), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) ,  .mostLeft(xLeft) , .leftFound(leftFound) );
+	mapRight map_R( .clk(CLOCK_50), .goMapColumnsR(goMapColumnsR), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) , .mostRight(xRight)  ,  .rightFound(rightFound) );
+	mapLeft map_L( .clk(CLOCK_50), .goMapColumnsL(goMapColumnsL), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) ,  .mostLeft(xLeft) , .leftFound(leftFound) );
 
 	
 	draw_box drawTime(.goDraw(goDraw), .xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom), 
@@ -109,8 +109,8 @@ module find_stars_no_vga(clk, resetn, start, x_for_vga, y_for_vga, col_for_vga, 
 	output plotEn;
 
 	wire doneDraw, goDraw;
-	wire goMapRows, topBottomFound;
-	wire goMapColumns, leftFound, rightFound;
+	wire goMapRows;
+	wire goMapColumnsR, goMapColumnsL, leftFound, rightFound;
 	
 	wire[xSz-1:0] xCount;
 	wire[ySz-1:0] yCount; 
@@ -118,13 +118,14 @@ module find_stars_no_vga(clk, resetn, start, x_for_vga, y_for_vga, col_for_vga, 
 	wire[xSz-1:0] midPix;
 	wire[xSz-1:0] xLeft, xRight;
 	wire[ySz-1:0] yTop, yBottom;
+wire topBottomFound;
 	
 
 
 	master yes_master(.xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom),
 			 .GO(start), .clk(clk), .resetn(resetn), .doneDraw(doneDraw), .topBottomFound(topBottomFound),
 			 .leftFound(leftFound), .rightFound(rightFound), .goDraw(goDraw),  
-			 .goMapColumns(goMapColumns), .goMapRows(goMapRows), .xCount(xCount), .yCount(yCount));
+			 .goMapColumnsR(goMapColumnsR),  .goMapColumnsL(goMapColumnsL), .goMapRows(goMapRows), .xCount(xCount), .yCount(yCount));
 
 	
 	/* > goMapRows COMING FROM state_machine1
@@ -135,7 +136,8 @@ module find_stars_no_vga(clk, resetn, start, x_for_vga, y_for_vga, col_for_vga, 
 	/* > yTop, yBottom and midPix are wires COMING from mapTopandBottom.v
 	*  > goMapColumns is a start signal from state_machine1
 	 * > mostLeft, mostRight, rightFound, leftFound are wire GOING to clean/draw.v */ 
-	mapLeftandRight map_LR( .clk(clk), .TopandBottomFound(goMapColumns), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) , .mostRight(xRight) ,  .mostLeft(xLeft) ,  .rightFound(rightFound) , .leftFound(leftFound) );
+	mapRight map_R( .clk(clk),.goMapColumnsR(goMapColumnsR), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) , .mostRight(xRight)  ,  .rightFound(rightFound) );
+	mapLeft map_L( .clk(clk), .goMapColumnsL(goMapColumnsL), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) ,  .mostLeft(xLeft) , .leftFound(leftFound) );
 
 	draw_box drawTime(.goDraw(goDraw), .xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom), 
 						.clk(clk), .xOut(x_for_vga), .yOut(y_for_vga), .colOut(col_for_vga), .doneDraw(doneDraw), .plotEn(plotEn));
