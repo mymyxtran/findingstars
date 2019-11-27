@@ -83,8 +83,8 @@ module find_stars
 	/* > yTop, yBottom and midPix are wires COMING from mapTopandBottom.v
 	*  > goMapColumns is a start signal from state_machine1
 	 * > mostLeft, mostRight, rightFound, leftFound are wire GOING to clean/draw.v */ 
-	mapLeftRight map_R( .clk(CLOCK_50), .TopandBottomFound(goMapColumnsR), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) , .mostRight(xRight)  ,  .rightFound(rightFound) );
-	mapLeftRight map_L( .clk(CLOCK_50), .TopandBottomFound(goMapColumnsL), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) ,  .mostLeft(xLeft) , .leftFound(leftFound) );
+	mapRight map_R( .clk(CLOCK_50), .TopandBottomFound(goMapColumnsR), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) , .mostRight(xRight)  ,  .rightFound(rightFound) );
+	mapLeft map_L( .clk(CLOCK_50), .TopandBottomFound(goMapColumnsL), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) ,  .mostLeft(xLeft) , .leftFound(leftFound) );
 
 	
 	draw_box drawTime(.goDraw(goDraw), .xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom), 
