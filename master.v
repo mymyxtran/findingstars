@@ -1,6 +1,6 @@
 //this module combines topDataPath and state_machine1
 module master(xLeft, xRight, yTop, yBottom, GO, clk, resetn, doneDraw, topBottomFound, leftFound, rightFound, 
-	      goDraw, goMapColumns, goMapRows, plotEn, xCount, yCount);
+	      goDraw, goMapColumnsL, goMapColumnsR, goMapRows, plotEn, xCount, yCount);
 
 	localparam THRESHOLD = 0;
 	
@@ -18,7 +18,7 @@ module master(xLeft, xRight, yTop, yBottom, GO, clk, resetn, doneDraw, topBottom
 	output[ySz-1:0] yCount;
 
 	//goes to findTB, findLR, draw
-	output goDraw, goMapColumns, goMapRows, plotEn;
+	output goDraw, goMapColumnsR, goMapColumnsL, goMapRows, plotEn;
 	
 	//wires btw master dp and control
 	wire pLoad, countXEn, countYEn, endOfImg;
@@ -46,7 +46,7 @@ module master(xLeft, xRight, yTop, yBottom, GO, clk, resetn, doneDraw, topBottom
 	state_machine1 fsm1(.GO(GO),.resetn(resetn), .clk(clk), .starFound(starFound), .endOfImg(endOfImg),
 							  .doneDraw(doneDraw), .doneClean(doneClean), .topBottomFound(topBottomFound),
 								.leftFound(leftFound), .rightFound(rightFound), .ld_count(pLoad), .countXEn(countXEn), .countYEn(countYEn), 
-								.goDraw(goDraw), .goMapRows(goMapRows), .goMapColumns(goMapColumns), .goClean(goClean));
+			    .goDraw(goDraw), .goMapRows(goMapRows), .goMapColumnsL(goMapColumnsL), .goMapColumnsR(goMapColumnsR), .goClean(goClean));
 	
 	clean_star cleanModule(.goClean(goClean), .xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom), .clk(clk),
 			       .addressOut(addressWrite), .colOut(colIn), .doneClean(doneClean), .wrEn(wrEn));
@@ -176,7 +176,8 @@ module state_machine1(input resetn, clk, GO, starFound, endOfImg, topBottomFound
 		countXEn = 1'b0;
 		countYEn = 1'b0;
 		goMapRows_s = 1'b0;
-		goMapColumns_s = 1'b0;
+		goMapColumnsL_s = 1'b0;
+		goMapColumnsR_s = 1'b0;
 		goDraw_s = 1'b0;
 		goClean_s = 1'b0;
 		
@@ -187,8 +188,11 @@ module state_machine1(input resetn, clk, GO, starFound, endOfImg, topBottomFound
 			MAP_TOP_BOT: begin
 				goMapRows_s = 1'b1;
 			end
-			MAP_L_R: begin
-				goMapColumns_s = 1'b1;
+			MAP_L: begin
+				goMapColumnsL_s = 1'b1;
+			end
+			MAP_R: begin
+				goMapColumnsR_s = 1'b1;
 			end
 			DRAW_SQ: begin
 				goDraw_s = 1'b1;
