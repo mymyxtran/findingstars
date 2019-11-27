@@ -10,7 +10,7 @@
 	mapTopandBottomFound map_TB( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound); 
 */
 
-module mapLeftandRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostRight,  mostLeft,  rightFound, leftFound);
+module mapRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostRight,  rightFound);
 	
 	parameter xSz = 8;
 	parameter ySz = 7;
@@ -20,9 +20,7 @@ module mapLeftandRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostR
 	input [ySz-1:0]mostBottom;
 	input [xSz-1:0] midPix; // must be 1 larger 
 	output [xSz-1:0] mostRight;
-	output [xSz-1:0] mostLeft;
 	output rightFound;
-	output leftFound;		
 					
 	wire  R_ld_x, R_ld_y, resetnR, R_countXEn, R_countYEn, rightEdgeReached, doneR;  // wires used by the find_Right
 	
@@ -58,7 +56,21 @@ module mapLeftandRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostR
 				.rightFound(rightFound)
 			);
 	
-	wire L_ld_x, L_ld_y, L_countXEn, L_countYEn, leftEdgeReached, doneL, resetnL;	// wires used by the find_Left
+endmodule
+
+module mapLeft(clk, TopandBottomFound,mostTop, mostBottom, midPix,  mostLeft, leftFound);
+	parameter xSz = 8;
+	parameter ySz = 7;
+
+	input clk, TopandBottomFound;
+	input [ySz-1:0]mostTop;
+	input [ySz-1:0]mostBottom;
+	input [xSz-1:0] midPix; // must be 1 larger 
+	output [xSz-1:0] mostLeft;
+	output leftFound;		
+			
+	
+wire L_ld_x, L_ld_y, L_countXEn, L_countYEn, leftEdgeReached, doneL, resetnL;	// wires used by the find_Left
 	
 	find_Left l1(		//inputs
 				.ld_x(L_ld_x), 
