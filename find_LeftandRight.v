@@ -10,19 +10,17 @@
 	mapTopandBottomFound map_TB( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound); 
 */
 
-module mapLeftandRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostRight,  mostLeft,  rightFound, leftFound);
+module mapRight(clk, goMapColumnsR, mostTop, mostBottom, midPix, mostRight,  rightFound);
 	
-	parameter xSz = 6;
-	parameter ySz = 6;
+	parameter xSz = 8;
+	parameter ySz = 7;
 
-	input clk, TopandBottomFound;
+	input clk, goMapColumnsR;
 	input [ySz-1:0]mostTop;
 	input [ySz-1:0]mostBottom;
 	input [xSz-1:0] midPix; // must be 1 larger 
 	output [xSz-1:0] mostRight;
-	output [xSz-1:0] mostLeft;
 	output rightFound;
-	output leftFound;		
 					
 	wire  R_ld_x, R_ld_y, resetnR, R_countXEn, R_countYEn, rightEdgeReached, doneR;  // wires used by the find_Right
 	
@@ -47,7 +45,7 @@ module mapLeftandRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostR
 				.rightEdgeReached(rightEdgeReached),
 				.doneR(doneR), 
 				.clk(clk), 
-				.TopandBottomFound(TopandBottomFound),
+				.goMapColumnsR(goMapColumnsR),
 		
 				// outputs
 				.ld_x(R_ld_x), 
@@ -58,7 +56,21 @@ module mapLeftandRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostR
 				.rightFound(rightFound)
 			);
 	
-	wire L_ld_x, L_ld_y, L_countXEn, L_countYEn, leftEdgeReached, doneL, resetnL;	// wires used by the find_Left
+endmodule
+
+module mapLeft(clk, goMapColumnsL, mostTop, mostBottom, midPix,  mostLeft, leftFound);
+	parameter xSz = 8;
+	parameter ySz = 7;
+
+	input clk, goMapColumnsL;
+	input [ySz-1:0]mostTop;
+	input [ySz-1:0]mostBottom;
+	input [xSz-1:0] midPix; // must be 1 larger 
+	output [xSz-1:0] mostLeft;
+	output leftFound;		
+			
+	
+wire L_ld_x, L_ld_y, L_countXEn, L_countYEn, leftEdgeReached, doneL, resetnL;	// wires used by the find_Left
 	
 	find_Left l1(		//inputs
 				.ld_x(L_ld_x), 
@@ -81,7 +93,7 @@ module mapLeftandRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostR
 				.leftEdgeReached(leftEdgeReached),
 				.doneL(doneL), 
 				.clk(clk), 
-				.TopandBottomFound(TopandBottomFound),
+				.goMapColumnsL(goMapColumnsL),
 		
 				// outputs
 				.ld_x(L_ld_x), 
@@ -109,13 +121,13 @@ module find_Right(
 		);  
 	
 	// Depends on image size 
-	parameter xSz = 6;
-	parameter ySz = 6;
-	parameter addrSz = 12;
+	parameter xSz = 8;
+	parameter ySz = 7;
+	parameter addrSz = 15;
 	parameter colSz = 3;
 
 	// Size of Image 
-	parameter x_resolution = 6'd60;
+	parameter x_resolution = 8'd160;
 
 	// set the threshold for pixel value
 	localparam THRESHOLD = 0;
@@ -136,7 +148,7 @@ module find_Right(
 	// output signals for control
 	output rightEdgeReached;
 	output doneR;
-	output reg [ySz-1:0] mostRight;
+	output reg [xSz-1:0] mostRight;
 	
 	//output wires for counters
 	reg[xSz-1:0] xCount; 
@@ -162,7 +174,7 @@ module find_Right(
 			xCount <= xCount;
 		end
 		else if(countXEn) begin
-			xCount <= xCount + 1'd1; // Traverse right until the mostRightEdge		
+			xCount <= xCount + 1'b1; // Traverse right until the mostRightEdge		
 		end
 		
 	end
@@ -175,16 +187,16 @@ module find_Right(
 			yCount <= mostTop; // start at the most top of the shape
 		end
 		else if(countYEn) begin
-			yCount <= yCount + 1'd1;
+			yCount <= yCount + 1'b1;
 		end
 	end
 	
 	// use trans0 and ram0 for access to xCount pixval
 	//instantiate address translator // input your x,y coordinates // output is the address you want to access
-	address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
+	vga_address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
 
 	//instantiate mem block
-	ram3600x3_sq ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
+	ram19200x3_c ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
 
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
 	assign rightEdgeReached = (pixVal == THRESHOLD) || (mostRight == x_resolution); 
@@ -212,7 +224,7 @@ endmodule
 
 module control_Right(
 		input rightEdgeReached,
-		doneR, clk, TopandBottomFound,
+		doneR, clk, goMapColumnsR,
 		output reg ld_x, ld_y, 
 		countXEn,
 		countYEn,
@@ -223,19 +235,21 @@ module control_Right(
 reg rightFound_DL, rightFound_s;	
 reg [3:0] current_state, next_state;
 
-localparam		TOPANDBOTTOMFOUND = 4'd0,
+localparam		LEFT_FOUND = 4'd0,
 			LoadIn = 4'd1,
 			INCREMENT_X = 4'd2,
 			CHECK_RIGHT = 4'd3,
 			RELOAD_MIDPIX = 4'd4,
 			INCREMENT_Y = 4'd5,
-			RIGHTFOUND = 4'd6;
+			RIGHTFOUND = 4'd6,
+			WAIT = 4'd7;
 
 always@(*)
 begin: state_table
 			
 	case(current_state)
-		TOPANDBOTTOMFOUND: next_state = LoadIn;
+		WAIT: next_state = goMapColumnsR ? LEFT_FOUND : WAIT;
+		LEFT_FOUND: next_state = LoadIn;
 		LoadIn: next_state = INCREMENT_X;
 		INCREMENT_X: next_state = CHECK_RIGHT;
 		
@@ -245,7 +259,7 @@ begin: state_table
 		RELOAD_MIDPIX: next_state = INCREMENT_Y;
 		INCREMENT_Y: next_state = doneR ? RIGHTFOUND : INCREMENT_X;
 		RIGHTFOUND: next_state = RIGHTFOUND;
-		default: next_state = TOPANDBOTTOMFOUND;
+		default: next_state = WAIT;
 	
 	endcase
 
@@ -262,7 +276,7 @@ begin: enable_signals
 	rightFound_s =1'b0;
 	
 	case(current_state)
-		TOPANDBOTTOMFOUND: begin
+		LEFT_FOUND: begin
 			resetn = 1'b0; // can i use this as a reset?
 		end
 		LoadIn: begin
@@ -288,8 +302,8 @@ end
 
 //current state registers
 always@(posedge clk) begin
-	if(TopandBottomFound)
-		current_state <= TOPANDBOTTOMFOUND;
+	if(goMapColumnsR)
+		current_state <= LEFT_FOUND;
 	else
 		current_state <= next_state;
 end
@@ -322,9 +336,9 @@ module find_Left(
 		mostLeft
 		);  
 
-	parameter xSz = 6;
-	parameter ySz = 6;
-	parameter addrSz = 12;
+	parameter xSz = 8;
+	parameter ySz = 7;
+	parameter addrSz = 15;
 	parameter colSz = 3;
 
 	//set the threshold for pixel value
@@ -346,7 +360,7 @@ module find_Left(
 	// output signals for control
 	output leftEdgeReached;
 	output doneL;
-	output reg [ySz-1:0] mostLeft;
+	output reg [xSz-1:0] mostLeft;
 	
 	//output wires for counters
 	reg[xSz-1:0] xCount;
@@ -389,10 +403,10 @@ module find_Left(
 	
 	// use trans0 and ram0 for access to xCount pixval
 	//instantiate address translator // input your x,y coordinates // output is the address you want to access
-	address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
+	vga_address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
 
 	//instantiate mem block
-	ram3600x3_sq ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); 
+	ram19200x3_c ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); 
 
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	.
 	assign leftEdgeReached = (pixVal == THRESHOLD) || (mostLeft == 1'b0); // Edge-case left end of screen is reached
@@ -415,31 +429,34 @@ endmodule
 
 module control_Left(
 		input leftEdgeReached,
-		doneL, clk, TopandBottomFound,
+		doneL, clk, goMapColumnsL,
 		output reg ld_x, ld_y, 
 		countXEn,
 		countYEn,
 		resetn,
 		output leftFound
 		);
-reg leftFound_DL, leftFound_s;		
+reg leftFound_DL, leftFound_s;
 reg [3:0] current_state, next_state;
 
-localparam		TOPANDBOTTOMFOUND = 4'd0,
+localparam		GO_MAP_LEFT= 4'd0,
 			LoadIn = 4'd1,
 			INCREMENT_X = 4'd2,
 			CHECK_LEFT = 4'd3,
 			RELOAD_MIDPIX =4'd4,
 			INCREMENT_Y = 4'd5,
-			LEFTFOUND = 4'd6;
+			LEFTFOUND = 4'd6,
+			WAIT = 4'd7;
 
 always@(*)
 begin: state_table
 			
 	case(current_state)
-		TOPANDBOTTOMFOUND: next_state = LoadIn;
+		WAIT: next_state = WAIT;
 		
 		//Load in your top and bottom values
+		GO_MAP_LEFT: next_state = LoadIn;
+			
 		LoadIn: next_state = INCREMENT_X;
 		
 		// start x counter
@@ -454,7 +471,7 @@ begin: state_table
 		// move down a row
 		INCREMENT_Y: next_state = doneL ? LEFTFOUND : INCREMENT_X;
 		LEFTFOUND: next_state = LEFTFOUND;
-		default: next_state = TOPANDBOTTOMFOUND;
+		default: next_state = WAIT;
 	
 	endcase
 
@@ -472,7 +489,7 @@ begin: enable_signals
 	leftFound_s =1'b0;
 	
 	case(current_state)
-		TOPANDBOTTOMFOUND: begin
+		GO_MAP_LEFT: begin
 			resetn = 1'b0; // can i use this as a reset?
 		end
 		LoadIn: begin
@@ -497,9 +514,10 @@ begin: enable_signals
 end
 
 //current state registers
+
 always@(posedge clk) begin
-	if(TopandBottomFound)
-		current_state <= TOPANDBOTTOMFOUND;
+	if(goMapColumnsL)
+		current_state <= GO_MAP_LEFT;
 	else
 		current_state <= next_state;
 end
@@ -507,33 +525,12 @@ end
 assign leftFound = (!leftFound_DL) && (leftFound_s);
 
 always@(posedge clk) begin
-	if(rightFound_s) begin
+	if(leftFound_s) begin
 		leftFound_DL <= 1'b1;
 	end
 	else begin
 		leftFound_DL <= 1'b0;
 	end
 end
-	
-endmodule
-
-module address_translator(x, y, mem_address);
-	
-	// 60 x 60
-	input [5:0] x; 
-	input [5:0] y;	
-	output [11:0] mem_address;
-	
-	/* The basic formula is address = y*WIDTH + x;
-	 * For 320x240 resolution we can write 320 as (256 + 64). Memory address becomes
-	 * (y*256) + (y*64) + x;
-	 * This simplifies multiplication a simple shift and add operation.
-	 * A leading 0 bit is added to each operand to ensure that they are treated as unsigned
-	 * inputs. By default the use a '+' operator will generate a signed adder.
-	 * Similarly, for 160x120 resolution we write 160 as 128+32.
-	 */
-	 //width = 60 = 32 + 16 + 8 + 4
-	 //so address = (y*32) + (y*16)  + (y*8)+ (y*4)+ x
-	 assign mem_address = ({1'b0, y, 5'd0} + {1'b0, y, 4'd0} +{1'b0, y, 3'd0} + {1'b0, y, 2'd0} + {1'b0,x});
 	
 endmodule

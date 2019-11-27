@@ -37,8 +37,8 @@ module drawDataPath(xLeft, xRight, yTop, yBottom, countXEn, countYEn, ld_x, ld_y
 							xEdge, yEdge, doneNE_reg, xOut, yOut, colOut);
 
 	//contants; depend on image size and colour res
-	parameter xSz = 3;
-	parameter ySz = 3;
+	parameter xSz = 8;
+	parameter ySz = 7;
 	parameter colSz = 3;
 	
 	//these define the dimensions of the box
@@ -76,7 +76,7 @@ module drawDataPath(xLeft, xRight, yTop, yBottom, countXEn, countYEn, ld_x, ld_y
 			else if(ld_x)
 				xCount <= xLeft;
 			else if(countXEn)
-				xCount <= xCount + 1;			
+				xCount <= xCount + 1'b1;			
 	end
 	
 	//has the x edge been reached?
@@ -87,9 +87,9 @@ module drawDataPath(xLeft, xRight, yTop, yBottom, countXEn, countYEn, ld_x, ld_y
 			if(!resetn)
 				yCount <= 0;
 			else if(ld_y)
-				yCount <= yTop - 1;//top is a white pix
+				yCount <= yTop - 1'b1;//top is a white pix
 			else if(countYEn)
-				yCount <= yCount + 1;			
+				yCount <= yCount + 1'b1;			
 	end
 	
 	assign xOut = xCount;
@@ -125,8 +125,7 @@ module drawControl(input clk, xEdge, yEdge, doneNE_reg, goDraw, output reg count
 	
 	reg doneDraw_DL, doneDraw_s; //delay and signal for pulsing
     
-   localparam   START_DRAW = 4'd0,
-					 STORE_X = 4'd1,
+   localparam   			 STORE_X = 4'd1,
 					 STORE_Y  = 4'd2,
 					 INCR_X = 4'd3,
 					 INCR_Y  = 4'd4,
@@ -139,7 +138,6 @@ module drawControl(input clk, xEdge, yEdge, doneNE_reg, goDraw, output reg count
 	always@(*)
 	begin: state_table
 		case (current_state)
-		START_DRAW: next_state = STORE_X;
 		STORE_X: next_state = STORE_Y;
 		STORE_Y: begin
 			if(!doneNE_reg)//has the northeast phase been completed?
@@ -168,7 +166,7 @@ module drawControl(input clk, xEdge, yEdge, doneNE_reg, goDraw, output reg count
 		DONE_NE: next_state = STORE_X;
 		DONE_DRAW: begin
 			if(goDraw)//wait at DONE_DRAW until told to start drawing again
-				next_state = START_DRAW;
+				next_state = STORE_X;
 			else
 				next_state = DONE_DRAW;
 			end
@@ -189,9 +187,6 @@ module drawControl(input clk, xEdge, yEdge, doneNE_reg, goDraw, output reg count
 		resetn = 1'b1;
 		
 		case(current_state)
-			START_DRAW: begin
-				resetn = 1'b0;
-			end
 			STORE_X: begin
 				ld_x = 1'b1;
 			end
@@ -223,7 +218,7 @@ module drawControl(input clk, xEdge, yEdge, doneNE_reg, goDraw, output reg count
 	//current state registers
 	always@(posedge clk) begin
 		if(goDraw)//add another resetn?
-			current_state <= START_DRAW;
+			current_state <= STORE_X;
 		else
 			current_state <= next_state;
    end

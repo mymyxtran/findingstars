@@ -4,10 +4,10 @@
 	> mostTop, mostBottom and TopandBottomFound are wires GOING to mapLeftandRight.v
 	mapTopandBottomFound map_TB( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound); 
 */
-module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound);
+module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound, midPix);
 				
-	parameter xSz = 6;
-	parameter ySz = 6;
+	parameter xSz = 8;
+	parameter ySz = 7;
 	
 	input clk, starFound;
 	input [xSz-1:0] xIn;
@@ -15,10 +15,10 @@ module mapTopandBottom( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBot
 	output [ySz-1:0] mostBottom;
 	output [ySz-1:0] mostTop;
 	output TopandBottomFound;
-		
+	output [xSz-1:0]midPix;	
+	
 	wire resetn, countXEn, countYEn, pLoad, rightEdgeReached, bottomEdgeReached; 
-	wire [xSz-1:0]midPix;
-		
+			
 	findTopandBottom u1(	 	//inputs
 									.clk(clk), 
 									.resetn(resetn),
@@ -68,9 +68,9 @@ module findTopandBottom(
 		bottomEdgeReached
 		);  
 
-	parameter xSz = 6;
-	parameter ySz = 6;
-	parameter addrSz = 12;
+	parameter xSz = 8;
+	parameter ySz = 7;
+	parameter addrSz = 15;
 	parameter colSz = 3;
 
 	// Size of image 
@@ -101,8 +101,8 @@ module findTopandBottom(
 
 	reg[xSz-1:0] xCount;//output wires for counters
 	reg[ySz-1:0] yCount;
-		  reg[xSz-1:0] xOriginal; // store inital x value to calculate midpix
-	reg[xSz-1:0] yOriginal; // store inital y value to have top most
+	reg[xSz-1:0] xOriginal; // store inital x value to calculate midpix
+	reg[ySz-1:0] yOriginal; // store inital y value to have top most
 
 	wire[addrSz-1:0] addressOut;//address wire from translator
 	wire[addrSz-1:0] addressOut_1;
@@ -143,16 +143,16 @@ module findTopandBottom(
 	
 	// use trans0 and ram0 for access to xCount pixval
 	//instantiate address translator // input your x,y coordinates // output is the address you want to access
-	address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
+	vga_address_translator trans0(.x(xCount), .y(yCount), .mem_address(addressOut));
 	//instantiate mem block
-	ram3600x3_sq ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
+	ram19200x3_c ram0(.address(addressOut),.q(pixVal), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
 	// Check for a black pixel (edge is reached) after incrementing the xCount by 1	. // Edge-case, the end (right-end) of the screen is reached
 	assign rightEdgeReached = (pixVal == THRESHOLD) || (xCount == x_resolution); // This signal indicates when to start mostBottom traversal. 
 	
 	
 	// use trans1 and ram1 for to find bottom and top most
-	address_translator trans1(.x(midPix), .y(yCount), .mem_address(addressOut_1));
-	ram3600x3_sq ram1(.address(addressOut_1),.q(pixVal_1), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
+	vga_address_translator trans1(.x(midPix), .y(yCount), .mem_address(addressOut_1));
+	ram19200x3_c ram1(.address(addressOut_1),.q(pixVal_1), .clock(clk), .wren(1'b0)); // got rid of wrEN signal bc this memory is read only.. but can/should i do this? 
 	
 	// This signal stop datapath, since all calculations are complete.
 	assign bottomEdgeReached = ((pixVal_1 == THRESHOLD) || (mostBottom == y_resolution)); // Edge-case, the end (bottom) of the screen is reached. 
@@ -184,12 +184,14 @@ localparam	STARFOUND = 4'd0,
 			INCREMENT_X = 4'd2,
 			INCREMENT_Y = 4'd3,
 			CHECK_IF_BOTTOMREACHED = 4'd4,
-			DONESEARCH = 4'd5;
+			DONESEARCH = 4'd5,
+			WAIT = 4'd6;
 
 always@(*)
 begin: state_table
 			
 	case(current_state)
+		WAIT: next_state = starFound ? STARFOUND : WAIT;
 		STARFOUND: next_state = LoadIn;
 		LoadIn: next_state = INCREMENT_X;
 		
@@ -198,7 +200,7 @@ begin: state_table
 		INCREMENT_Y: next_state = CHECK_IF_BOTTOMREACHED;
 		CHECK_IF_BOTTOMREACHED: next_state = bottomEdgeReached ? DONESEARCH : INCREMENT_Y;
 		DONESEARCH: next_state = DONESEARCH;
-		default: next_state = STARFOUND;
+		default: next_state = WAIT;
 	
 	endcase
 
@@ -215,6 +217,7 @@ begin: enable_signals
 	TopandBottomFound_s =1'b0;
 	
 	case(current_state)
+		
 		STARFOUND: begin
 			resetn = 1'b0; // can i use this as a reset?
 		end
@@ -230,7 +233,7 @@ begin: enable_signals
 		DONESEARCH: begin
 			TopandBottomFound_s = 1'b1;
 		end
-	
+		
 	endcase
 
 end
@@ -256,24 +259,6 @@ end
 
 endmodule
 
-module address_translator(x, y, mem_address);
-	
-	// 60 x 60
-	input [5:0] x; 
-	input [5:0] y;	
-	output [11:0] mem_address;
-	
-	/* The basic formula is address = y*WIDTH + x;
-	 * For 320x240 resolution we can write 320 as (256 + 64). Memory address becomes
-	 * (y*256) + (y*64) + x;
-	 * This simplifies multiplication a simple shift and add operation.
-	 * A leading 0 bit is added to each operand to ensure that they are treated as unsigned
-	 * inputs. By default the use a '+' operator will generate a signed adder.
-	 * Similarly, for 160x120 resolution we write 160 as 128+32.
-	 */
-	 //width = 60 = 32 + 16 + 8 + 4
-	 //so address = (y*32) + (y*16)  + (y*8)+ (y*4)+ x
-	 assign mem_address = ({1'b0, y, 5'd0} + {1'b0, y, 4'd0} +{1'b0, y, 3'd0} + {1'b0, y, 2'd0} + {1'b0,x});
-	
 
-endmodule
+
+
