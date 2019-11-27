@@ -39,7 +39,7 @@ module find_stars
 	wire doneClean, goClean;
 	wire doneDraw, goDraw;
 	wire goMapRows, topBottomFound;
-	wire goMapColumns, leftFound, rightFound;
+	wire goMapColumnsR, goMapColumnsL, leftFound, rightFound;
 	
 	wire[xSz-1:0] xCount;
 	wire[ySz-1:0] yCount; 
@@ -72,7 +72,7 @@ module find_stars
 	master yes_master(.xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom),
 			 .GO(SW[1]), .clk(CLOCK_50), .resetn(SW[0]), .doneDraw(doneDraw), .topBottomFound(topBottomFound),
 			 .leftFound(leftFound), .rightFound(rightFound), .goDraw(goDraw),  
-			 .goMapColumns(goMapColumns), .goMapRows(goMapRows), .xCount(xCount), .yCount(yCount));
+			  .goMapColumnsR(goMapColumnsR), .goMapColumnsL(goMapColumnsL), .goMapRows(goMapRows), .xCount(xCount), .yCount(yCount));
 
 	
 	/* > goMapRows COMING FROM state_machine1
@@ -83,8 +83,10 @@ module find_stars
 	/* > yTop, yBottom and midPix are wires COMING from mapTopandBottom.v
 	*  > goMapColumns is a start signal from state_machine1
 	 * > mostLeft, mostRight, rightFound, leftFound are wire GOING to clean/draw.v */ 
-	mapLeftandRight map_LR( .clk(CLOCK_50), .TopandBottomFound(goMapColumns), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) , .mostRight(xRight) ,  .mostLeft(xLeft) ,  .rightFound(rightFound) , .leftFound(leftFound) );
+	mapLeftRight map_R( .clk(CLOCK_50), .TopandBottomFound(goMapColumnsR), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) , .mostRight(xRight)  ,  .rightFound(rightFound) );
+	mapLeftRight map_L( .clk(CLOCK_50), .TopandBottomFound(goMapColumnsL), .mostTop(yTop) , .mostBottom(yBottom) , .midPix(midPix) ,  .mostLeft(xLeft) , .leftFound(leftFound) );
 
+	
 	draw_box drawTime(.goDraw(goDraw), .xLeft(xLeft), .xRight(xRight), .yTop(yTop), .yBottom(yBottom), 
 						.clk(CLOCK_50), .xOut(x_for_vga), .yOut(y_for_vga), .colOut(col_for_vga), .doneDraw(doneDraw), .plotEn(plotEn));
 
