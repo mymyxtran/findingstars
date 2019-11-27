@@ -10,12 +10,12 @@
 	mapTopandBottomFound map_TB( clk, starFound, xIn, yIn, mostBottom, mostTop, TopandBottomFound); 
 */
 
-module mapRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostRight,  rightFound);
+module mapRight(clk, goMapColumnsR, mostTop, mostBottom, midPix, mostRight,  rightFound);
 	
 	parameter xSz = 8;
 	parameter ySz = 7;
 
-	input clk, TopandBottomFound;
+	input clk, goMapColumnsR;
 	input [ySz-1:0]mostTop;
 	input [ySz-1:0]mostBottom;
 	input [xSz-1:0] midPix; // must be 1 larger 
@@ -45,7 +45,7 @@ module mapRight(clk, TopandBottomFound,mostTop, mostBottom, midPix, mostRight,  
 				.rightEdgeReached(rightEdgeReached),
 				.doneR(doneR), 
 				.clk(clk), 
-				.TopandBottomFound(TopandBottomFound),
+				.goMapColumnsR(goMapColumnsR),
 		
 				// outputs
 				.ld_x(R_ld_x), 
@@ -224,7 +224,7 @@ endmodule
 
 module control_Right(
 		input rightEdgeReached,
-		doneR, clk, leftFound,
+		doneR, clk, goMapColumnsR,
 		output reg ld_x, ld_y, 
 		countXEn,
 		countYEn,
@@ -248,7 +248,7 @@ always@(*)
 begin: state_table
 			
 	case(current_state)
-		WAIT: next_state = leftFound ? LEFT_FOUND : WAIT;
+		WAIT: next_state = goMapColumnsR ? LEFT_FOUND : WAIT;
 		LEFT_FOUND: next_state = LoadIn;
 		LoadIn: next_state = INCREMENT_X;
 		INCREMENT_X: next_state = CHECK_RIGHT;
@@ -302,7 +302,7 @@ end
 
 //current state registers
 always@(posedge clk) begin
-	if(leftFound)
+	if(goMapColumnsR)
 		current_state <= LEFT_FOUND;
 	else
 		current_state <= next_state;
@@ -429,7 +429,7 @@ endmodule
 
 module control_Left(
 		input leftEdgeReached,
-		doneL, clk, TopandBottomFound,
+		doneL, clk, goMapColumnsL,
 		output reg ld_x, ld_y, 
 		countXEn,
 		countYEn,
@@ -439,21 +439,24 @@ module control_Left(
 reg leftFound_DL, leftFound_s;
 reg [3:0] current_state, next_state;
 
-localparam		TOPANDBOTTOMFOUND = 4'd0,
+localparam		GO_MAP_LEFT = 4'd0,
 			LoadIn = 4'd1,
 			INCREMENT_X = 4'd2,
 			CHECK_LEFT = 4'd3,
 			RELOAD_MIDPIX =4'd4,
 			INCREMENT_Y = 4'd5,
 			LEFTFOUND = 4'd6;
+			WAIT = 4'd7;
 
 always@(*)
 begin: state_table
 			
 	case(current_state)
-		TOPANDBOTTOMFOUND: next_state = LoadIn;
+		WAIT: next_state = goMapColumnsR ? GO_MAP_LEFT : WAIT;
 		
 		//Load in your top and bottom values
+		GO_MAP_LEFT: next_state = LoadIn;
+			
 		LoadIn: next_state = INCREMENT_X;
 		
 		// start x counter
@@ -468,7 +471,7 @@ begin: state_table
 		// move down a row
 		INCREMENT_Y: next_state = doneL ? LEFTFOUND : INCREMENT_X;
 		LEFTFOUND: next_state = LEFTFOUND;
-		default: next_state = TOPANDBOTTOMFOUND;
+		default: next_state = WAIT;
 	
 	endcase
 
@@ -486,7 +489,7 @@ begin: enable_signals
 	leftFound_s =1'b0;
 	
 	case(current_state)
-		TOPANDBOTTOMFOUND: begin
+		GO_MAP_LEFT: begin
 			resetn = 1'b0; // can i use this as a reset?
 		end
 		LoadIn: begin
@@ -512,8 +515,8 @@ end
 
 //current state registers
 always@(posedge clk) begin
-	if(TopandBottomFound)
-		current_state <= TOPANDBOTTOMFOUND;
+	if(goMapColumnsL)
+		current_state <= GO_MAP_LEFT;
 	else
 		current_state <= next_state;
 end
