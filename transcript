@@ -1,0 +1,329 @@
+do find_stars.do
+# ** Warning: (vlib-34) Library already exists at "work".
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 13:01:58 on Nov 28,2019
+# vlog -reportprogress 300 find_stars.v ram19200x3_c.v draw_box.v clean_star.v master.v findTopandBottom.v find_LeftandRight.v vga_address_translator.v 
+# -- Compiling module find_stars
+# -- Compiling module find_stars_no_vga
+# -- Compiling module ram19200x3_c
+# -- Compiling module draw_box
+# -- Compiling module drawDataPath
+# -- Compiling module drawControl
+# -- Compiling module clean_star
+# -- Compiling module cleanDataPath
+# -- Compiling module cleanControl
+# -- Compiling module address_translator
+# -- Compiling module master
+# -- Compiling module topDataPath
+# -- Compiling module state_machine1
+# -- Compiling module mapTopandBottom
+# -- Compiling module findTopandBottom
+# -- Compiling module controlTopandBottom
+# -- Compiling module mapRight
+# -- Compiling module mapLeft
+# -- Compiling module find_Right
+# -- Compiling module control_Right
+# -- Compiling module find_Left
+# -- Compiling module control_Left
+# -- Compiling module vga_address_translator
+# 
+# Top level modules:
+# 	find_stars
+# 	address_translator
+# End time: 13:01:58 on Nov 28,2019, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vsim -L altera_mf_ver -L altera_mf find_stars_no_vga 
+# Start time: 13:01:58 on Nov 28,2019
+# Loading work.find_stars_no_vga
+# Loading work.master
+# Loading work.topDataPath
+# Loading work.vga_address_translator
+# Loading work.state_machine1
+# Loading work.clean_star
+# Loading work.cleanDataPath
+# Loading work.cleanControl
+# ** Error: (vsim-3033) master.v(54): Instantiation of 'ram19200x3_2' failed. The design unit was not found.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/yes_master File: master.v
+#         Searched libraries:
+#             /home/kelly/intelFPGA_lite/18.1/modelsim_ase/altera/verilog/altera_mf
+#             /home/kelly/intelFPGA_lite/18.1/modelsim_ase/altera/vhdl/altera_mf
+#             /home/kelly/ece241/findingstars-multistars/work
+# Loading work.mapTopandBottom
+# Loading work.findTopandBottom
+# Loading work.ram19200x3_c
+# Loading altera_mf_ver.altsyncram
+# ** Error: (vsim-3033) findTopandBottom.v(155): Instantiation of 'ram19200x3_2' failed. The design unit was not found.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_TB/u1 File: findTopandBottom.v
+#         Searched libraries:
+#             /home/kelly/intelFPGA_lite/18.1/modelsim_ase/altera/verilog/altera_mf
+#             /home/kelly/intelFPGA_lite/18.1/modelsim_ase/altera/vhdl/altera_mf
+#             /home/kelly/ece241/findingstars-multistars/work
+# Loading work.controlTopandBottom
+# Loading work.mapRight
+# Loading work.find_Right
+# ** Error: (vsim-3033) find_LeftandRight.v(199): Instantiation of 'ram19200x3_2' failed. The design unit was not found.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_R/r1 File: find_LeftandRight.v
+#         Searched libraries:
+#             /home/kelly/intelFPGA_lite/18.1/modelsim_ase/altera/verilog/altera_mf
+#             /home/kelly/intelFPGA_lite/18.1/modelsim_ase/altera/vhdl/altera_mf
+#             /home/kelly/ece241/findingstars-multistars/work
+# Loading work.control_Right
+# Loading work.mapLeft
+# Loading work.find_Left
+# ** Error: (vsim-3033) find_LeftandRight.v(409): Instantiation of 'ram19200x3_2' failed. The design unit was not found.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_L/l1 File: find_LeftandRight.v
+#         Searched libraries:
+#             /home/kelly/intelFPGA_lite/18.1/modelsim_ase/altera/verilog/altera_mf
+#             /home/kelly/intelFPGA_lite/18.1/modelsim_ase/altera/vhdl/altera_mf
+#             /home/kelly/ece241/findingstars-multistars/work
+# Loading work.control_Left
+# Loading work.draw_box
+# Loading work.drawDataPath
+# Loading work.drawControl
+# Error loading design
+# Error: Error loading design
+#        Pausing macro execution
+# MACRO ./find_stars.do PAUSED at line 5
+do find_stars.do
+# ** Warning: (vlib-34) Library already exists at "work".
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 13:02:20 on Nov 28,2019
+# vlog -reportprogress 300 find_stars.v ram19200x3_2.v draw_box.v clean_star.v master.v findTopandBottom.v find_LeftandRight.v vga_address_translator.v 
+# -- Compiling module find_stars
+# -- Compiling module find_stars_no_vga
+# -- Compiling module ram19200x3_2
+# -- Compiling module draw_box
+# -- Compiling module drawDataPath
+# -- Compiling module drawControl
+# -- Compiling module clean_star
+# -- Compiling module cleanDataPath
+# -- Compiling module cleanControl
+# -- Compiling module address_translator
+# -- Compiling module master
+# -- Compiling module topDataPath
+# -- Compiling module state_machine1
+# -- Compiling module mapTopandBottom
+# -- Compiling module findTopandBottom
+# -- Compiling module controlTopandBottom
+# -- Compiling module mapRight
+# -- Compiling module mapLeft
+# -- Compiling module find_Right
+# -- Compiling module control_Right
+# -- Compiling module find_Left
+# -- Compiling module control_Left
+# -- Compiling module vga_address_translator
+# 
+# Top level modules:
+# 	find_stars
+# 	address_translator
+# End time: 13:02:20 on Nov 28,2019, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# vsim -L altera_mf_ver -L altera_mf find_stars_no_vga 
+# Start time: 13:01:58 on Nov 28,2019
+# Loading work.find_stars_no_vga
+# Loading work.master
+# Loading work.topDataPath
+# Loading work.vga_address_translator
+# Loading work.state_machine1
+# Loading work.clean_star
+# Loading work.cleanDataPath
+# Loading work.cleanControl
+# Loading work.ram19200x3_2
+# Loading altera_mf_ver.altsyncram
+# Loading work.mapTopandBottom
+# Loading work.findTopandBottom
+# Loading work.ram19200x3_c
+# Loading work.controlTopandBottom
+# Loading work.mapRight
+# Loading work.find_Right
+# Loading work.control_Right
+# Loading work.mapLeft
+# Loading work.find_Left
+# Loading work.control_Left
+# Loading work.draw_box
+# Loading work.drawDataPath
+# Loading work.drawControl
+# Loading altera_mf_ver.altsyncram_body
+# Loading altera_mf_ver.ALTERA_DEVICE_FAMILIES
+# Loading altera_mf_ver.ALTERA_MF_MEMORY_INITIALIZATION
+# ** Warning: (vsim-3017) find_stars.v(83): [TFMPC] - Too few port connections. Expected 18, found 17.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/yes_master File: master.v
+# ** Warning: (vsim-3722) find_stars.v(83): [TFMPC] - Missing connection for port 'plotEn'.
+# ** Warning: (vsim-3017) findTopandBottom.v(148): [TFMPC] - Too few port connections. Expected 5, found 4.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_TB/u1/ram0 File: ram19200x3_c.v
+# ** Warning: (vsim-3722) findTopandBottom.v(148): [TFMPC] - Missing connection for port 'data'.
+# ** Warning: (vsim-3017) findTopandBottom.v(155): [TFMPC] - Too few port connections. Expected 5, found 4.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_TB/u1/ram1 File: ram19200x3_2.v
+# ** Warning: (vsim-3722) findTopandBottom.v(155): [TFMPC] - Missing connection for port 'data'.
+# ** Warning: (vsim-3017) find_LeftandRight.v(199): [TFMPC] - Too few port connections. Expected 5, found 4.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_R/r1/ram0 File: ram19200x3_2.v
+# ** Warning: (vsim-3722) find_LeftandRight.v(199): [TFMPC] - Missing connection for port 'data'.
+# ** Warning: (vsim-3017) find_LeftandRight.v(409): [TFMPC] - Too few port connections. Expected 5, found 4.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_L/l1/ram0 File: ram19200x3_2.v
+# ** Warning: (vsim-3722) find_LeftandRight.v(409): [TFMPC] - Missing connection for port 'data'.
+# WARNING: No extended dataflow license exists
+# ** Warning: (vsim-3116) Problem reading symbols from linux-gate.so.1 : can not open ELF file.
+do find_stars.do
+# ** Warning: (vlib-34) Library already exists at "work".
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 13:03:47 on Nov 28,2019
+# vlog -reportprogress 300 find_stars.v ram19200x3_2.v draw_box.v clean_star.v master.v findTopandBottom.v find_LeftandRight.v vga_address_translator.v 
+# -- Compiling module find_stars
+# -- Compiling module find_stars_no_vga
+# -- Compiling module ram19200x3_2
+# -- Compiling module draw_box
+# -- Compiling module drawDataPath
+# -- Compiling module drawControl
+# -- Compiling module clean_star
+# -- Compiling module cleanDataPath
+# -- Compiling module cleanControl
+# -- Compiling module address_translator
+# -- Compiling module master
+# -- Compiling module topDataPath
+# -- Compiling module state_machine1
+# -- Compiling module mapTopandBottom
+# -- Compiling module findTopandBottom
+# -- Compiling module controlTopandBottom
+# -- Compiling module mapRight
+# -- Compiling module mapLeft
+# -- Compiling module find_Right
+# -- Compiling module control_Right
+# -- Compiling module find_Left
+# -- Compiling module control_Left
+# -- Compiling module vga_address_translator
+# 
+# Top level modules:
+# 	find_stars
+# 	address_translator
+# End time: 13:03:47 on Nov 28,2019, Elapsed time: 0:00:00
+# Errors: 0, Warnings: 0
+# End time: 13:03:47 on Nov 28,2019, Elapsed time: 0:01:49
+# Errors: 4, Warnings: 12
+# vsim -L altera_mf_ver -L altera_mf find_stars_no_vga 
+# Start time: 13:03:47 on Nov 28,2019
+# Loading work.find_stars_no_vga
+# Loading work.master
+# Loading work.topDataPath
+# Loading work.vga_address_translator
+# Loading work.state_machine1
+# Loading work.clean_star
+# Loading work.cleanDataPath
+# Loading work.cleanControl
+# Loading work.ram19200x3_2
+# Loading altera_mf_ver.altsyncram
+# Loading work.mapTopandBottom
+# Loading work.findTopandBottom
+# Loading work.ram19200x3_c
+# Loading work.controlTopandBottom
+# Loading work.mapRight
+# Loading work.find_Right
+# Loading work.control_Right
+# Loading work.mapLeft
+# Loading work.find_Left
+# Loading work.control_Left
+# Loading work.draw_box
+# Loading work.drawDataPath
+# Loading work.drawControl
+# Loading altera_mf_ver.altsyncram_body
+# Loading altera_mf_ver.ALTERA_DEVICE_FAMILIES
+# Loading altera_mf_ver.ALTERA_MF_MEMORY_INITIALIZATION
+# ** Warning: (vsim-3017) find_stars.v(83): [TFMPC] - Too few port connections. Expected 18, found 17.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/yes_master File: master.v
+# ** Warning: (vsim-3722) find_stars.v(83): [TFMPC] - Missing connection for port 'plotEn'.
+# ** Warning: (vsim-3017) findTopandBottom.v(148): [TFMPC] - Too few port connections. Expected 5, found 4.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_TB/u1/ram0 File: ram19200x3_c.v
+# ** Warning: (vsim-3722) findTopandBottom.v(148): [TFMPC] - Missing connection for port 'data'.
+# ** Warning: (vsim-3017) findTopandBottom.v(155): [TFMPC] - Too few port connections. Expected 5, found 4.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_TB/u1/ram1 File: ram19200x3_2.v
+# ** Warning: (vsim-3722) findTopandBottom.v(155): [TFMPC] - Missing connection for port 'data'.
+# ** Warning: (vsim-3017) find_LeftandRight.v(199): [TFMPC] - Too few port connections. Expected 5, found 4.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_R/r1/ram0 File: ram19200x3_2.v
+# ** Warning: (vsim-3722) find_LeftandRight.v(199): [TFMPC] - Missing connection for port 'data'.
+# ** Warning: (vsim-3017) find_LeftandRight.v(409): [TFMPC] - Too few port connections. Expected 5, found 4.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_L/l1/ram0 File: ram19200x3_2.v
+# ** Warning: (vsim-3722) find_LeftandRight.v(409): [TFMPC] - Missing connection for port 'data'.
+# WARNING: No extended dataflow license exists
+# ** Warning: (vsim-3116) Problem reading symbols from linux-gate.so.1 : can not open ELF file.
+do find_stars.do
+# ** Warning: (vlib-34) Library already exists at "work".
+# Model Technology ModelSim - Intel FPGA Edition vlog 10.5b Compiler 2016.10 Oct  5 2016
+# Start time: 13:05:38 on Nov 28,2019
+# vlog -reportprogress 300 find_stars.v ram19200x3_2.v draw_box.v clean_star.v master.v findTopandBottom.v find_LeftandRight.v vga_address_translator.v 
+# -- Compiling module find_stars
+# -- Compiling module find_stars_no_vga
+# -- Compiling module ram19200x3_2
+# -- Compiling module draw_box
+# -- Compiling module drawDataPath
+# -- Compiling module drawControl
+# -- Compiling module clean_star
+# -- Compiling module cleanDataPath
+# -- Compiling module cleanControl
+# -- Compiling module address_translator
+# -- Compiling module master
+# -- Compiling module topDataPath
+# -- Compiling module state_machine1
+# -- Compiling module mapTopandBottom
+# -- Compiling module findTopandBottom
+# -- Compiling module controlTopandBottom
+# -- Compiling module mapRight
+# -- Compiling module mapLeft
+# -- Compiling module find_Right
+# -- Compiling module control_Right
+# -- Compiling module find_Left
+# -- Compiling module control_Left
+# -- Compiling module vga_address_translator
+# 
+# Top level modules:
+# 	find_stars
+# 	address_translator
+# End time: 13:05:39 on Nov 28,2019, Elapsed time: 0:00:01
+# Errors: 0, Warnings: 0
+# End time: 13:05:39 on Nov 28,2019, Elapsed time: 0:01:52
+# Errors: 0, Warnings: 12
+# vsim -L altera_mf_ver -L altera_mf find_stars_no_vga 
+# Start time: 13:05:39 on Nov 28,2019
+# Loading work.find_stars_no_vga
+# Loading work.master
+# Loading work.topDataPath
+# Loading work.vga_address_translator
+# Loading work.state_machine1
+# Loading work.clean_star
+# Loading work.cleanDataPath
+# Loading work.cleanControl
+# Loading work.ram19200x3_2
+# Loading altera_mf_ver.altsyncram
+# Loading work.mapTopandBottom
+# Loading work.findTopandBottom
+# Loading work.ram19200x3_c
+# Loading work.controlTopandBottom
+# Loading work.mapRight
+# Loading work.find_Right
+# Loading work.control_Right
+# Loading work.mapLeft
+# Loading work.find_Left
+# Loading work.control_Left
+# Loading work.draw_box
+# Loading work.drawDataPath
+# Loading work.drawControl
+# Loading altera_mf_ver.altsyncram_body
+# Loading altera_mf_ver.ALTERA_DEVICE_FAMILIES
+# Loading altera_mf_ver.ALTERA_MF_MEMORY_INITIALIZATION
+# ** Warning: (vsim-3017) find_stars.v(83): [TFMPC] - Too few port connections. Expected 18, found 17.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/yes_master File: master.v
+# ** Warning: (vsim-3722) find_stars.v(83): [TFMPC] - Missing connection for port 'plotEn'.
+# ** Warning: (vsim-3017) findTopandBottom.v(148): [TFMPC] - Too few port connections. Expected 5, found 4.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_TB/u1/ram0 File: ram19200x3_c.v
+# ** Warning: (vsim-3722) findTopandBottom.v(148): [TFMPC] - Missing connection for port 'data'.
+# ** Warning: (vsim-3017) findTopandBottom.v(155): [TFMPC] - Too few port connections. Expected 5, found 4.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_TB/u1/ram1 File: ram19200x3_2.v
+# ** Warning: (vsim-3722) findTopandBottom.v(155): [TFMPC] - Missing connection for port 'data'.
+# ** Warning: (vsim-3017) find_LeftandRight.v(199): [TFMPC] - Too few port connections. Expected 5, found 4.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_R/r1/ram0 File: ram19200x3_2.v
+# ** Warning: (vsim-3722) find_LeftandRight.v(199): [TFMPC] - Missing connection for port 'data'.
+# ** Warning: (vsim-3017) find_LeftandRight.v(409): [TFMPC] - Too few port connections. Expected 5, found 4.
+#    Time: 0 ps  Iteration: 0  Instance: /find_stars_no_vga/map_L/l1/ram0 File: ram19200x3_2.v
+# ** Warning: (vsim-3722) find_LeftandRight.v(409): [TFMPC] - Missing connection for port 'data'.
+# WARNING: No extended dataflow license exists
+# ** Warning: (vsim-3116) Problem reading symbols from linux-gate.so.1 : can not open ELF file.
+# End time: 13:15:22 on Nov 28,2019, Elapsed time: 0:09:43
+# Errors: 0, Warnings: 12
